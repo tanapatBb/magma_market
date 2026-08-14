@@ -3,679 +3,916 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจัดการสต็อกสินค้า - magma market</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <title>Magma Market - ระบบจัดการสต็อก</title>
+  
+  <!-- Google Fonts: Kanit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- HTML5 QR Code / Barcode Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    :root {
+      --primary: #ff5722;
+      --primary-hover: #e64a19;
+      --bg: #f4f6f8;
+      --card-bg: #ffffff;
+      --text: #2c3e50;
+      --text-muted: #7f8c8d;
+      --border-radius: 12px;
+      --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Kanit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding-bottom: 40px;
+    }
+
+    /* 📌 Header Navbar */
+    .navbar {
+      background: linear-gradient(135deg, #ff5722, #ff7043);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .navbar h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-nav {
+      background: white;
+      color: var(--primary);
+      border: none;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+    }
+
+    .btn-nav:active {
+      transform: scale(0.95);
+    }
+
+    /* 📦 Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 15px;
+    }
+
+    /* 🔍 Search Bar & Controls */
+    .controls {
+      margin-bottom: 20px;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      gap: 8px;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      flex-grow: 1;
+    }
+
+    .search-input-wrapper i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 15px 12px 42px;
+      border: 1px solid #e0e0e0;
+      border-radius: var(--border-radius);
+      font-size: 0.95rem;
+      outline: none;
+      background: white;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+    }
+
+    .btn-scan-main {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 0 16px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 🃏 Grid View for Cards */
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 640px) {
+      .product-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 1024px) {
+      .product-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* 🃏 Product Card */
+    .product-card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: var(--shadow);
+      display: flex;
+      gap: 15px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-img {
+      width: 90px;
+      height: 90px;
+      border-radius: 8px;
+      object-fit: cover;
+      background-color: #f0f0f0;
+      flex-shrink: 0;
+      border: 1px solid #f0f0f0;
+    }
+
+    .product-details {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .product-brand {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
+    .product-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .badge-qty {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .badge-qty.low {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+
+    .price-tag {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #333;
+      margin-top: 4px;
+    }
+
+    /* 🔘 Action Buttons */
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .btn-act {
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-act:active { opacity: 0.7; }
+    .btn-deduct { background-color: #e3f2fd; color: #1565c0; }
+    .btn-edit { background-color: #fff3e0; color: #ef6c00; }
+    .btn-delete { background-color: #ffebee; color: #c62828; }
+
+    /* ⏳ Loading & Empty States */
+    .status-msg {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      font-size: 2rem;
+      color: var(--primary);
+      animation: spin 1s linear infinite;
+      margin-bottom: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 🪟 Modals */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 200;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    @media (min-width: 640px) {
+      .modal { align-items: center; }
+    }
+
+    .modal-content {
+      background: white;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 -5px 25px rgba(0,0,0,0.2);
+    }
+
+    @media (min-width: 640px) {
+      .modal-content { border-radius: var(--border-radius); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    .preview-img-box {
+      margin-top: 8px;
+      display: none;
+    }
+    .preview-img-box img {
+      width: 70px;
+      height: 70px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 1px solid #ddd;
+    }
+
+    /* Camera Capture UI */
+    .camera-box {
+      width: 100%;
+      position: relative;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #videoElement {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+    }
+
+    .btn-capture {
+      width: 100%;
+      background: #2e7d32;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen text-gray-800 pb-10">
+<body>
 
   <!-- Header -->
-  <header class="bg-blue-600 text-white shadow-md sticky top-0 z-10">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-      <h1 class="font-bold text-lg flex items-center gap-1">📦 magma market</h1>
-      <div class="flex gap-2">
-        <button onclick="startDeductScanner()" class="bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg text-sm font-medium transition shadow flex items-center gap-1">
-          📷 สแกนตัดสต็อก
-        </button>
-        <button onclick="toggleAddModal(true)" class="bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-lg text-sm font-medium transition shadow">
-          + เพิ่มสินค้า
-        </button>
-      </div>
+  <div class="navbar">
+    <h1><i class="fa-solid fa-boxes-stacked"></i> Magma Market</h1>
+    <div class="nav-btns">
+      <button class="btn-nav" onclick="openScannerModal('deduct')"><i class="fa-solid fa-barcode"></i> สแกนตัดสต็อก</button>
+      <button class="btn-nav" onclick="openModal('add')"><i class="fa-solid fa-plus"></i> เพิ่มสินค้า</button>
     </div>
-  </header>
+  </div>
 
-  <!-- Container -->
-  <main class="max-w-4xl mx-auto p-4 space-y-4">
-
-    <!-- Overview Cards -->
-    <div class="grid grid-cols-3 gap-3">
-      <div class="bg-white p-3 rounded-xl shadow text-center">
-        <p class="text-xs text-gray-500">รายการยี่ห้อทั้งหมด</p>
-        <p id="stat-total" class="text-xl font-bold text-blue-600">0</p>
-      </div>
-      <div class="bg-white p-3 rounded-xl shadow text-center">
-        <p class="text-xs text-gray-500">สต็อกคงเหลือรวม</p>
-        <p id="stat-remaining" class="text-xl font-bold text-emerald-600">0</p>
-      </div>
-      <div class="bg-white p-3 rounded-xl shadow text-center">
-        <p class="text-xs text-gray-500">ใกล้หมด/หมดอายุ</p>
-        <p id="stat-alert" class="text-xl font-bold text-rose-500">0</p>
-      </div>
-    </div>
-
+  <div class="container">
     <!-- Search Bar -->
-    <div>
-      <input type="text" id="searchInput" oninput="renderTable()" placeholder="🔍 ค้นหายี่ห้อ, Lot หรือ บาร์โค้ด..." class="w-full p-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-sm">
-    </div>
-
-    <!-- Product List -->
-    <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <p class="text-center text-gray-400 py-8 col-span-full">กำลังโหลดข้อมูล...</p>
-    </div>
-  </main>
-
-  <!-- Modal: Scanner Barcode -->
-  <div id="scannerModal" class="fixed inset-0 bg-black/80 hidden flex flex-col items-center justify-center p-4 z-[60]">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-4 space-y-3 text-center">
-      <h3 id="scannerTitle" class="font-bold text-lg text-gray-800">📷 ส่องบาร์โค้ด</h3>
-      <div id="reader" class="w-full overflow-hidden rounded-lg bg-black min-h-[250px]"></div>
-      <p class="text-xs text-gray-500">จัดให้บาร์โค้ดอยู่ตรงกลางช่องสแกน</p>
-      <button onclick="stopScanner()" class="w-full py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium">
-        ปิดกล้อง
-      </button>
-    </div>
-  </div>
-
-  <!-- Modal: Add Product -->
-  <div id="addModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-      <h2 class="text-lg font-bold border-b pb-2">เพิ่มรายการสินค้าใหม่</h2>
-      <form id="addForm" onsubmit="handleAddSubmit(event)" class="space-y-3 text-sm">
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">หมายเลข Lot (ถ้ามี)</label>
-            <input type="text" name="lotNo" placeholder="เช่น LOT-01" class="w-full border rounded-lg p-2 font-mono">
-          </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">รหัสบาร์โค้ด</label>
-            <div class="flex gap-1">
-              <input type="text" name="barcode" id="addBarcode" placeholder="ยิง/สแกนใส่ช่องนี้" class="w-full border rounded-lg p-2 font-mono bg-gray-50">
-              <button type="button" onclick="startFormScanner('addBarcode')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2.5 py-2 rounded-lg font-medium whitespace-nowrap">📷</button>
-            </div>
-          </div>
+    <div class="controls">
+      <div class="search-box">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อ, เลขบาร์โค้ด หรือตัวเลขรหัสสินค้า..." oninput="filterProducts()">
         </div>
-        
-        <div>
-          <label class="block text-gray-600 font-medium mb-1">รูปภาพสินค้า</label>
-          <input type="file" id="addFileImage" accept="image/*" onchange="previewAndUploadImage(this, 'addPreview', 'addImageUrl')" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-          <input type="hidden" name="imageUrl" id="addImageUrl">
-          <div id="addPreview" class="mt-2 hidden">
-            <img src="" class="w-20 h-20 object-cover rounded-lg border">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-gray-600 font-medium mb-1">ชื่อยี่ห้อ / ชื่อสินค้า</label>
-          <input type="text" name="brand" required class="w-full border rounded-lg p-2">
-        </div>
-
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">ปริมาณ</label>
-            <input type="text" name="volume" placeholder="เช่น 500g" required class="w-full border rounded-lg p-2">
-          </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">จำนวนนำเข้า</label>
-            <input type="number" name="totalQty" required class="w-full border rounded-lg p-2">
-          </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">หน่วยเรียก</label>
-            <select name="unit" class="w-full border rounded-lg p-2 bg-white">
-              <option value="ถุง">ถุง</option>
-              <option value="กระสอบ">กระสอบ</option>
-              <option value="กระปุก">กระปุก</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">วันที่นำเข้า</label>
-            <input type="date" name="importDate" required class="w-full border rounded-lg p-2">
-          </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">วันที่หมดอายุ</label>
-            <input type="date" name="expDate" required class="w-full border rounded-lg p-2">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">ราคาต้นทุน (บาท)</label>
-            <input type="number" step="0.01" name="costPrice" id="costPrice" oninput="calcSuggestedPrice('costPrice', 'suggestedPrice')" required class="w-full border rounded-lg p-2">
-          </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">ราคาแนะนำ (+50%)</label>
-            <input type="number" step="0.01" name="suggestedPrice" id="suggestedPrice" class="w-full border rounded-lg p-2 bg-gray-50">
-          </div>
-        </div>
-        <div>
-          <label class="block text-gray-600 font-medium mb-1">หมายเหตุ</label>
-          <input type="text" name="note" class="w-full border rounded-lg p-2">
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="toggleAddModal(false)" class="px-4 py-2 border rounded-lg text-gray-600">ยกเลิก</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">บันทึกข้อมูล</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: View Lots List (แสดงรายการ Lots ของสินค้านั้นๆ) -->
-  <div id="lotsModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-2">
-        <div>
-          <h2 id="lotsTitle" class="text-lg font-bold text-gray-900">รายการ Lot สินค้า</h2>
-          <p id="lotsSubtitle" class="text-xs text-gray-500"></p>
-        </div>
-        <button onclick="toggleLotsModal(false)" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
-      </div>
-      <div id="lotsContainer" class="space-y-3">
-        <!-- รายการ Lots จะถูกสร้างที่นี่ -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Edit Lot (แก้ไข Lot เฉพาะรายการ) -->
-  <div id="editModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-[55]">
-    <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h2 class="text-lg font-bold">⚙️ แก้ไขข้อมูล Lot</h2>
-        <button onclick="handleDeleteFromModal()" class="text-rose-500 hover:text-rose-700 text-xs font-semibold px-2 py-1 bg-rose-50 rounded-lg">
-          🗑️ ลบ Lot นี้
+        <button class="btn-scan-main" onclick="openScannerModal('deduct')" title="สแกนด้วยกล้อง">
+          <i class="fa-solid fa-camera"></i>
         </button>
       </div>
-      <form id="editForm" onsubmit="handleEditSubmit(event)" class="space-y-3 text-sm">
-        <input type="hidden" name="rowIndex" id="editRowIndex">
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">หมายเลข Lot</label>
-            <input type="text" name="lotNo" id="editLotNo" class="w-full border rounded-lg p-2 font-mono">
-          </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">รหัสบาร์โค้ด</label>
-            <div class="flex gap-1">
-              <input type="text" name="barcode" id="editBarcode" class="w-full border rounded-lg p-2 font-mono bg-gray-50">
-              <button type="button" onclick="startFormScanner('editBarcode')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-2 rounded-lg font-medium whitespace-nowrap">📷</button>
-            </div>
-          </div>
+    </div>
+
+    <!-- Product Grid Container -->
+    <div id="productGrid" class="product-grid"></div>
+
+    <!-- Status Message (Loading / Empty) -->
+    <div id="statusMsg" class="status-msg">
+      <div class="spinner"><i class="fa-solid fa-circle-notch"></i></div>
+      <p>กำลังโหลดข้อมูลสินค้า...</p>
+    </div>
+  </div>
+
+  <!-- Modal สำหรับ เพิ่ม / แก้ไข สินค้า -->
+  <div id="productModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">เพิ่มสินค้าใหม่</h3>
+        <i class="fa-solid fa-xmark" onclick="closeModal()" style="cursor:pointer; font-size: 1.2rem;"></i>
+      </div>
+      
+      <form id="productForm" onsubmit="saveProduct(event)">
+        <input type="hidden" id="formAction" value="add">
+        <input type="hidden" id="formRowIndex" value="">
+        <input type="hidden" id="imageUrl" value="">
+
+        <div class="form-group">
+          <label>ชื่อสินค้า / แบรนด์ *</label>
+          <input type="text" id="brand" class="form-control" required>
         </div>
-        
-        <div>
-          <label class="block text-gray-600 font-medium mb-1">เปลี่ยนรูปภาพสินค้า</label>
-          <input type="file" id="editFileImage" accept="image/*" onchange="previewAndUploadImage(this, 'editPreview', 'editImageUrl')" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-          <input type="hidden" name="imageUrl" id="editImageUrl">
-          <div id="editPreview" class="mt-2">
-            <img id="editPreviewImg" src="" class="w-20 h-20 object-cover rounded-lg border">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>ขนาด / ปริมาตร</label>
+            <input type="text" id="volume" class="form-control" placeholder="เช่น 500g, 1L">
+          </div>
+          <div class="form-group">
+            <label>หน่วยนับ</label>
+            <input type="text" id="unit" class="form-control" value="ถุง">
           </div>
         </div>
 
-        <div>
-          <label class="block text-gray-600 font-medium mb-1">ชื่อยี่ห้อ / สินค้า</label>
-          <input type="text" name="brand" id="editBrand" required class="w-full border rounded-lg p-2">
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">ปริมาณ</label>
-            <input type="text" name="volume" id="editVolume" required class="w-full border rounded-lg p-2">
+        <div class="form-row">
+          <div class="form-group">
+            <label>จำนวนทั้งหมด *</label>
+            <input type="number" id="totalQty" class="form-control" required min="0">
           </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">จำนวนนำเข้า</label>
-            <input type="number" name="totalQty" id="editTotalQty" required class="w-full border rounded-lg p-2">
-          </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">หน่วยเรียก</label>
-            <select name="unit" id="editUnit" class="w-full border rounded-lg p-2 bg-white">
-              <option value="ถุง">ถุง</option>
-              <option value="กระสอบ">กระสอบ</option>
-              <option value="กระปุก">กระปุก</option>
-            </select>
+          <div class="form-group" id="remainingGroup" style="display: none;">
+            <label>คงเหลือ</label>
+            <input type="number" id="remainingQty" class="form-control" min="0">
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">จำนวนคงเหลือ Lot นี้</label>
-            <input type="number" name="remainingQty" id="editRemainingQty" required class="w-full border rounded-lg p-2 font-bold text-blue-600">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>ราคาต้นทุน</label>
+            <input type="number" id="costPrice" class="form-control" step="0.01">
           </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">วันที่นำเข้า</label>
-            <input type="date" name="importDate" id="editImportDate" required class="w-full border rounded-lg p-2">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">วันที่หมดอายุ</label>
-            <input type="date" name="expDate" id="editExpDate" required class="w-full border rounded-lg p-2">
-          </div>
-          <div>
-            <label class="block text-gray-600 font-medium mb-1">ราคาต้นทุน (บาท)</label>
-            <input type="number" step="0.01" name="costPrice" id="editCostPrice" oninput="calcSuggestedPrice('editCostPrice', 'editSuggestedPrice')" required class="w-full border rounded-lg p-2">
+          <div class="form-group">
+            <label>ราคาขาย</label>
+            <input type="number" id="suggestedPrice" class="form-control" step="0.01">
           </div>
         </div>
-        <div>
-          <label class="block text-gray-600 font-medium mb-1">ราคาแนะนำ (+50%)</label>
-          <input type="number" step="0.01" name="suggestedPrice" id="editSuggestedPrice" class="w-full border rounded-lg p-2 bg-gray-50">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>วันที่นำเข้า</label>
+            <input type="date" id="importDate" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>วันหมดอายุ</label>
+            <input type="date" id="expDate" class="form-control">
+          </div>
         </div>
-        <div>
-          <label class="block text-gray-600 font-medium mb-1">หมายเหตุ</label>
-          <input type="text" name="note" id="editNote" class="w-full border rounded-lg p-2">
+
+        <!-- 📷 เลือกรูปภาพจากเครื่อง/ถ่ายรูป -->
+        <div class="form-group">
+          <label>เลือกรูปภาพสินค้า (อัปโหลดอัตโนมัติ)</label>
+          <input type="file" id="imageFile" class="form-control" accept="image/*">
+          <div id="previewBox" class="preview-img-box">
+            <p style="font-size: 0.75rem; color: #888; margin-bottom: 2px;">รูปปัจจุบัน:</p>
+            <img id="previewImg" src="" alt="preview">
+          </div>
         </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="toggleEditModal(false)" class="px-4 py-2 border rounded-lg text-gray-600">ยกเลิก</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">บันทึกการแก้ไข</button>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>บาร์โค้ด / รหัสสินค้า (ตัวเลข)</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="barcode" class="form-control" placeholder="ตัวเลข หรือ สแกน">
+              <button type="button" class="btn-act btn-deduct" onclick="openScannerModal('fillBarcode')" style="padding: 0 10px;">
+                <i class="fa-solid fa-camera"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>เลข Lot</label>
+            <input type="text" id="lotNo" class="form-control">
+          </div>
         </div>
+
+        <div class="form-group">
+          <label>หมายเหตุ</label>
+          <input type="text" id="note" class="form-control">
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-submit">บันทึกข้อมูล</button>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal สำหรับ ถ่ายรูปเพื่ออ่านบาร์โค้ด -->
+  <div id="scannerModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <div class="modal-header">
+        <h3 id="scannerTitle">ถ่ายรูปบาร์โค้ด/รหัสสินค้า</h3>
+        <i class="fa-solid fa-xmark" onclick="closeScannerModal()" style="cursor:pointer; font-size: 1.2rem;"></i>
+      </div>
+      
+      <div class="camera-box">
+        <video id="videoElement" autoplay playsinline></video>
+      </div>
+
+      <button id="captureBtn" class="btn-capture" onclick="captureAndScan()">
+        <i class="fa-solid fa-camera"></i> 📸 ถ่ายรูปสแกน
+      </button>
+
+      <!-- Element สำหรับช่วยประมวลผลรูปถ่าย -->
+      <canvas id="canvasElement" style="display:none;"></canvas>
+      <div id="tempScanContainer" style="display:none;"></div>
     </div>
   </div>
 
   <script>
-    const GAS_URL = 'https://magma-market-api.onrender.com/api/products';
+    // 🔗 API Endpoint บน Render
+    const API_URL = 'https://magma-market-api.onrender.com/api/products';
+    
+    // 🔑 ImgBB Token
     const IMGBB_API_KEY = 'd6088edb9697a26a2e94f3ba26801487';
+    
+    let allProducts = [];
+    let mediaStream = null;
+    let scanTargetMode = 'deduct'; // 'deduct' หรือ 'fillBarcode'
 
-    let products = [];
-    let html5QrcodeScanner = null;
-    let targetInputIdForScan = null;
-    let currentBrandLots = [];
+    // โหลดข้อมูลครั้งแรกเมื่อเปิดหน้าเว็บ
+    document.addEventListener('DOMContentLoaded', loadProducts);
 
-    async function fetchData() {
+    // 1. ฟังก์ชันดึงข้อมูลสินค้าทั้งหมดจาก API
+    async function loadProducts() {
+      showLoading(true);
       try {
-        const res = await fetch(GAS_URL, { redirect: "follow" });
-        if (!res.ok) throw new Error("HTTP Status " + res.status);
-        products = await res.json();
-        renderTable();
+        const res = await fetch(API_URL);
+        allProducts = await res.json();
+        renderGrid(allProducts);
       } catch (err) {
-        alert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + err.message);
+        console.error('Error fetching products:', err);
+        showStatus('<p style="color:#c62828;">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</p>');
       }
     }
 
-    // ฟังก์ชันใส่วันที่ปัจจุบัน (YYYY-MM-DD) ให้ฟอร์มเพิ่มสินค้า
-function setTodayDefault() {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  
-  const todayStr = `${yyyy}-${mm}-${dd}`;
-  
-  // ใส่วันที่นำเข้าเป็นวันนี้อัตโนมัติ
-  const importInput = document.querySelector('#addForm input[name="importDate"]');
-  if (importInput && !importInput.value) {
-    importInput.value = todayStr;
-  }
-}
-
-// ฟังก์ชันแปลงวันที่สำหรับการแสดงผลการ์ดเป็น dd/mm/yyyy
-function formatDMY(dateInput) {
-  if (!dateInput || dateInput === '-') return '-';
-
-  let year, month, day;
-
-  if (typeof dateInput === 'string') {
-    const cleanStr = dateInput.split('T')[0];
-    if (cleanStr.includes('-')) {
-      const parts = cleanStr.split('-');
-      if (parts.length === 3) {
-        if (parts[0].length === 4) { // YYYY-MM-DD
-          year = parts[0]; month = parts[1]; day = parts[2];
-        } else { // DD-MM-YYYY
-          day = parts[0]; month = parts[1]; year = parts[2];
-        }
-      }
-    }
-  }
-
-  if (year && month && day) {
-    return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
-  }
-
-  const d = new Date(dateInput);
-  if (!isNaN(d.getTime())) {
-    const dDay = String(d.getDate()).padStart(2, '0');
-    const dMonth = String(d.getMonth() + 1).padStart(2, '0');
-    const dYear = d.getFullYear();
-    return `${dDay}/${dMonth}/${dYear}`;
-  }
-
-  return dateInput;
-}
-
-// ปรับปรุงฟังก์ชันเปิด Modal เพิ่มสินค้า
-function toggleAddModal(show) {
-  const modal = document.getElementById('addModal');
-  modal.classList.toggle('hidden', !show);
-  if (show) {
-    setTodayDefault(); // เติมวันที่วันนี้ให้อัตโนมัติ
-  }
-}
-
-    async function previewAndUploadImage(fileInput, previewContainerId, hiddenUrlInputId) {
-      const file = fileInput.files[0];
-      if (!file) return;
-
-      if (IMGBB_API_KEY === 'YOUR_IMGBB_API_KEY') {
-        alert('โปรดใส่ ImgBB API Key ในไฟล์ index.html ก่อนใช้งานฟังก์ชันอัปโหลดรูปภาพ');
+    // 2. ฟังก์ชันวาดการ์ดสินค้าบนหน้าจอ
+    function renderGrid(products) {
+      const grid = document.getElementById('productGrid');
+      
+      if (!products || products.length === 0) {
+        grid.innerHTML = '';
+        showStatus('<p>ไม่พบรายการสินค้า</p>');
         return;
       }
 
-      const previewContainer = document.getElementById(previewContainerId);
-      previewContainer.classList.remove('hidden');
-      const previewImg = previewContainer.querySelector('img');
-      previewImg.src = URL.createObjectURL(file);
-      previewImg.style.opacity = '0.4';
+      showLoading(false);
+      
+      grid.innerHTML = products.map(p => {
+        const isLow = p.remainingQty <= 5;
+        const fallbackImg = 'https://via.placeholder.com/150?text=No+Image';
 
+        return `
+          <div class="product-card">
+            <img 
+              src="${p.imageUrl || fallbackImg}" 
+              class="product-img" 
+              onerror="this.onerror=null; this.src='${fallbackImg}';"
+              alt="${p.brand}"
+            />
+            <div class="product-details">
+              <div>
+                <div class="product-brand">${p.brand} ${p.volume ? `(${p.volume})` : ''}</div>
+                <div class="product-sub">
+                  ${p.barcode ? `รหัส/บาร์โค้ด: <b>${p.barcode}</b><br>` : ''}
+                  ${p.expDate ? `หมดอายุ: ${p.expDate} (${p.daysLeft} วัน)` : 'ไม่ได้ระบุวันหมดอายุ'}
+                </div>
+                <span class="badge-qty ${isLow ? 'low' : ''}">
+                  เหลือ ${p.remainingQty} ${p.unit}
+                </span>
+                ${p.suggestedPrice ? `<div class="price-tag">฿${p.suggestedPrice.toLocaleString()}</div>` : ''}
+              </div>
+
+              <div class="card-actions">
+                <button class="btn-act btn-deduct" onclick="handleDeduct('${p.rowIndex}', '${p.brand}')">
+                  <i class="fa-solid fa-minus"></i> 1
+                </button>
+                <button class="btn-act btn-edit" onclick="openModal('edit', '${p.rowIndex}')">
+                  <i class="fa-solid fa-pen"></i> แก้ไข
+                </button>
+                <button class="btn-act btn-delete" onclick="handleDelete('${p.rowIndex}', '${p.brand}')">
+                  <i class="fa-solid fa-trash"></i> ลบ
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 3. ฟังก์ชันอัปโหลดภาพขึ้น ImgBB
+    async function uploadToImgBB(file) {
       const formData = new FormData();
       formData.append('image', file);
 
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        return data.data.url;
+      } else {
+        throw new Error('Upload Image Failed');
+      }
+    }
+
+    // 4. ฟังก์ชันตัดสต็อก (-1)
+    async function handleDeduct(id, brandName) {
+      if (!confirm(`ยืนยันการตัดสต็อก (-1) ของ "${brandName}" ใช่หรือไม่?`)) return;
+
       try {
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        const res = await fetch(API_URL, {
           method: 'POST',
-          body: formData
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'deduct', rowIndex: id, deductQty: 1 })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          await loadProducts();
+        }
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการตัดสต็อก');
+      }
+    }
+
+    // 5. ฟังก์ชันลบสินค้า
+    async function handleDelete(id, brandName) {
+      if (!confirm(`⚠️ ยืนยันการลบสินค้า "${brandName}" ใช่หรือไม่?\nการกระทำนี้ไม่สามารถยกเลิกได้!`)) return;
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', rowIndex: id })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          alert('ลบข้อมูลเรียบร้อยแล้ว!');
+          await loadProducts();
+        }
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการลบสินค้า');
+      }
+    }
+
+    // 6. ฟังก์ชันบันทึกข้อมูล (เพิ่ม/แก้ไข)
+    async function saveProduct(event) {
+      event.preventDefault();
+      
+      const action = document.getElementById('formAction').value;
+      const actionText = action === 'add' ? 'เพิ่มสินค้าใหม่' : 'แก้ไขข้อมูลสินค้า';
+
+      if (!confirm(`คุณต้องการยืนยันการ${actionText}ใช่หรือไม่?`)) return;
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'กำลังบันทึกข้อมูล...';
+
+      const fileInput = document.getElementById('imageFile');
+      let finalImageUrl = document.getElementById('imageUrl').value;
+
+      if (fileInput.files.length > 0) {
+        try {
+          finalImageUrl = await uploadToImgBB(fileInput.files[0]);
+        } catch (err) {
+          alert('อัปโหลดรูปภาพไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'บันทึกข้อมูล';
+          return;
+        }
+      }
+
+      const rowIndex = document.getElementById('formRowIndex').value;
+
+      const payload = {
+        action: action,
+        rowIndex: rowIndex,
+        brand: document.getElementById('brand').value,
+        volume: document.getElementById('volume').value,
+        unit: document.getElementById('unit').value || 'ถุง',
+        totalQty: Number(document.getElementById('totalQty').value) || 0,
+        costPrice: Number(document.getElementById('costPrice').value) || 0,
+        suggestedPrice: Number(document.getElementById('suggestedPrice').value) || 0,
+        importDate: document.getElementById('importDate').value,
+        expDate: document.getElementById('expDate').value,
+        imageUrl: finalImageUrl,
+        barcode: document.getElementById('barcode').value,
+        lotNo: document.getElementById('lotNo').value,
+        note: document.getElementById('note').value
+      };
+
+      if (action === 'edit') {
+        payload.remainingQty = Number(document.getElementById('remainingQty').value);
+      }
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
 
-        if (data.success) {
-          document.getElementById(hiddenUrlInputId).value = data.data.url;
-          previewImg.src = data.data.url;
-          previewImg.style.opacity = '1';
+        if (data.status === 'success') {
+          alert(`บันทึกข้อมูลสำเร็จ!`);
+          closeModal();
+          await loadProducts();
         } else {
-          alert('อัปโหลดรูปภาพไม่สำเร็จ: ' + data.error.message);
+          alert('เกิดข้อผิดพลาด: ' + data.message);
         }
       } catch (err) {
-        alert('เกิดข้อผิดพลาดในการส่งรูปภาพ');
+        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อบันทึกข้อมูลได้');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'บันทึกข้อมูล';
       }
     }
 
-    // --- จัดกลุ่มสินค้าตามชื่อยี่ห้อ (Group by Brand) ---
-    function renderTable() {
-      const search = document.getElementById('searchInput').value.toLowerCase();
-      const listEl = document.getElementById('productList');
-      listEl.innerHTML = '';
-
-      // กรองตามการค้นหา
-      const filtered = products.filter(p => 
-        (p.brand && p.brand.toLowerCase().includes(search)) || 
-        (p.barcode && p.barcode.toLowerCase().includes(search)) ||
-        (p.lotNo && p.lotNo.toLowerCase().includes(search))
+    // 7. ระบบค้นหาสินค้า
+    function filterProducts() {
+      const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+      const filtered = allProducts.filter(p => 
+        (p.brand && p.brand.toLowerCase().includes(keyword)) ||
+        (p.barcode && String(p.barcode).toLowerCase().includes(keyword))
       );
+      renderGrid(filtered);
+    }
 
-      // จัดกลุ่มสินค้าชื่อเดียวกัน
-      const grouped = {};
-      filtered.forEach(item => {
-        const key = item.brand.trim();
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(item);
-      });
+    // 📸 ระบบเปิดกล้องถ่ายรูปสแกนบาร์โค้ด
+    async function openScannerModal(mode) {
+      scanTargetMode = mode;
+      document.getElementById('scannerModal').style.display = 'flex';
+      
+      const video = document.getElementById('videoElement');
 
-      const brandNames = Object.keys(grouped);
-      let grandTotalRem = 0;
-      let alertCount = 0;
-
-      if (brandNames.length === 0) {
-        listEl.innerHTML = `<p class="text-center text-gray-400 py-8 col-span-full">ไม่พบรายการสินค้า</p>`;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        video.srcObject = mediaStream;
+      } catch (err) {
+        alert('ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตสิทธิ์กล้องในเบราว์เซอร์');
+        closeScannerModal();
       }
-
-      brandNames.forEach(brand => {
-        const lots = grouped[brand];
-        const totalRem = lots.reduce((sum, item) => sum + Number(item.remainingQty || 0), 0);
-        grandTotalRem += totalRem;
-
-        // หา Lot ที่หมดอายุก่อนเพื่อน
-        lots.sort((a, b) => (a.daysLeft === '-' ? 9999 : a.daysLeft) - (b.daysLeft === '-' ? 9999 : b.daysLeft));
-        const earliestItem = lots[0];
-
-        const isExpiringSoon = earliestItem.daysLeft !== '-' && earliestItem.daysLeft <= 30;
-        const isLowStock = totalRem <= 2;
-        if (isExpiringSoon || isLowStock) alertCount++;
-
-        const card = document.createElement('div');
-        card.className = 'bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between gap-3 relative overflow-hidden hover:shadow-md transition';
-        
-        const imageHTML = earliestItem.imageUrl 
-          ? `<img src="${earliestItem.imageUrl}" alt="${brand}" class="w-16 h-16 object-cover rounded-lg bg-gray-100 flex-shrink-0" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0\\'>🖼️</div>';">`
-          : `<div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">🖼️</div>`;
-
-        const formattedExpDate = formatDMY(earliestItem.expDate);
-        const unitName = earliestItem.unit || 'ถุง';
-
-        card.innerHTML = `
-          <div class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" onclick="openLotsModal('${brand}')">
-            ${imageHTML}
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <h3 class="font-bold text-gray-900 text-sm truncate">${brand}</h3>
-                <span class="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.2 rounded font-semibold">📦 ${lots.length} Lots</span>
-              </div>
-              
-              <div class="flex items-center gap-2 mt-0.5 text-xs">
-                <span class="text-gray-500">ทุน: <b>${earliestItem.costPrice}฿</b></span>
-                <span class="text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded">ขาย: <b>${earliestItem.suggestedPrice}฿</b></span>
-              </div>
-
-              <p class="text-xs text-gray-500 mt-0.5">คงเหลือรวม: <b class="text-base ${totalRem <= 2 ? 'text-rose-600' : 'text-blue-600'}">${totalRem}</b> ${unitName}</p>
-
-              <div class="mt-1">
-                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${earliestItem.daysLeft <= 30 ? 'bg-rose-100 text-rose-600' : 'bg-gray-100 text-gray-600'}">
-                  หมดอายุเร็วสุด: ${formattedExpDate}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col items-end gap-1 flex-shrink-0">
-            <button onclick="handleDeduct('${earliestItem.rowIndex}')" class="bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs px-3 py-2 rounded-lg font-medium shadow flex items-center gap-1">
-              ✂️ ตัด (-1)
-            </button>
-            <button onclick="openLotsModal('${brand}')" class="text-gray-400 hover:text-blue-600 text-[11px] p-1">
-              🔍 ดู Lots
-            </button>
-          </div>
-        `;
-        listEl.appendChild(card);
-      });
-
-      document.getElementById('stat-total').innerText = brandNames.length;
-      document.getElementById('stat-remaining').innerText = grandTotalRem;
-      document.getElementById('stat-alert').innerText = alertCount;
     }
 
-    // --- เปิด Modal แสดงรายการ Lots ของยี่ห้อนี้ ---
-    function openLotsModal(brand) {
-      currentBrandLots = products.filter(p => p.brand.trim() === brand.trim());
-      
-      document.getElementById('lotsTitle').innerText = brand;
-      document.getElementById('lotsSubtitle').innerText = `มีทั้งหมด ${currentBrandLots.length} Lot(s)`;
+    // 📸 ฟังก์ชันกดปุ่มถ่ายรูปแล้วค่อยประมวลผล
+    async function captureAndScan() {
+      const video = document.getElementById('videoElement');
+      const canvas = document.getElementById('canvasElement');
+      const btn = document.getElementById('captureBtn');
 
-      const container = document.getElementById('lotsContainer');
-      container.innerHTML = '';
-
-      currentBrandLots.forEach((item, index) => {
-        const unitName = item.unit || 'ถุง';
-        const formattedExpDate = formatDMY(item.expDate);
-        const formattedImportDate = formatDMY(item.importDate);
-
-        const lotCard = document.createElement('div');
-        lotCard.className = 'bg-gray-50 p-3 rounded-xl border border-gray-200 flex justify-between items-center gap-2';
-        
-        lotCard.innerHTML = `
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-sm text-gray-800">Lot: ${item.lotNo || 'Lot ' + (index + 1)}</span>
-              ${item.barcode ? `<span class="text-[10px] font-mono bg-gray-200 text-gray-600 px-1 rounded">🏷️ ${item.barcode}</span>` : ''}
-            </div>
-            <div class="text-xs text-gray-500 mt-1 space-y-0.5">
-              <p>เข้า: ${formattedImportDate} | หมดอายุ: <b>${formattedExpDate}</b></p>
-              <p class="text-blue-600 font-medium">คงเหลือ Lot นี้: <b>${item.remainingQty}</b> ${unitName}</p>
-            </div>
-          </div>
-          <div class="flex flex-col gap-1 items-end">
-            <button onclick="handleDeduct('${item.rowIndex}')" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium shadow">
-              ✂️ ตัด (-1)
-            </button>
-            <button onclick="openEditModal(${item.rowIndex})" class="text-blue-600 hover:text-blue-800 text-xs font-medium pt-1">
-              ✏️ แก้ไข Lot
-            </button>
-          </div>
-        `;
-        container.appendChild(lotCard);
-      });
-
-      toggleLotsModal(true);
-    }
-
-    function toggleLotsModal(show) {
-      document.getElementById('lotsModal').classList.toggle('hidden', !show);
-    }
-
-    function startDeductScanner() {
-      targetInputIdForScan = null;
-      document.getElementById('scannerTitle').innerText = "📷 ส่องบาร์โค้ดเพื่อตัดสต็อก";
-      openScannerModal();
-    }
-
-    function startFormScanner(inputId) {
-      targetInputIdForScan = inputId;
-      document.getElementById('scannerTitle').innerText = "📷 ส่องบาร์โค้ดเพื่อใส่ข้อมูล";
-      openScannerModal();
-    }
-
-    function openScannerModal() {
-      document.getElementById('scannerModal').classList.remove('hidden');
-      html5QrcodeScanner = new Html5Qrcode("reader");
-      const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-      
-      html5QrcodeScanner.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess
-      ).catch(err => {
-        alert("ไม่สามารถเปิดกล้องได้ โปรดอนุญาตสิทธิ์การใช้กล้องในเบราว์เซอร์");
-        stopScanner();
-      });
-    }
-
-    async function onScanSuccess(decodedText) {
-      if ('vibrate' in navigator) navigator.vibrate(200);
-      stopScanner();
-
-      if (targetInputIdForScan) {
-        document.getElementById(targetInputIdForScan).value = decodedText;
-        targetInputIdForScan = null;
+      if (!video.videoWidth) {
+        alert('กล้องยังไม่พร้อม ทำการลองใหม่อีกครั้ง');
         return;
       }
 
-      const item = products.find(p => p.barcode && p.barcode.trim() === decodedText.trim());
-      if (item) {
-        if (confirm(`พบสินค้า: ${item.brand} (${item.lotNo || 'ไม่ระบุ Lot'})\nยืนยันตัดสต็อก 1 ชิ้น?`)) {
-          await handleDeduct(item.rowIndex);
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังอ่านข้อมูล...';
+
+      // วาดรูปจาก Video ลง Canvas
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // แปลงเป็น Image File/Blob
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], "scan.jpg", { type: "image/jpeg" });
+        const html5Qrcode = new Html5Qrcode("tempScanContainer");
+
+        try {
+          const decodedText = await html5Qrcode.scanFile(file, true);
+          onScanSuccess(decodedText);
+        } catch (err) {
+          alert('❌ อ่านบาร์โค้ดไม่สำเร็จ กรุณาเล็งบาร์โค้ดให้ชัดเจนแล้วถ่ายใหม่อีกครั้ง');
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-camera"></i> 📸 ถ่ายรูปสแกน';
         }
-      } else {
-        alert(`ไม่พบสินค้าที่มีรหัสบาร์โค้ด: ${decodedText}`);
+      }, 'image/jpeg');
+    }
+
+    function onScanSuccess(decodedText) {
+      closeScannerModal();
+
+      if (scanTargetMode === 'fillBarcode') {
+        document.getElementById('barcode').value = decodedText;
+      } else if (scanTargetMode === 'deduct') {
+        const found = allProducts.find(p => String(p.barcode).trim() === String(decodedText).trim());
+        if (found) {
+          handleDeduct(found.rowIndex, found.brand);
+        } else {
+          alert(`สแกนได้รหัส: ${decodedText}\n❌ ไม่พบสินค้าตรงกับรหัสนี้ในระบบ`);
+        }
       }
     }
 
-    function stopScanner() {
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop().then(() => {
-          html5QrcodeScanner.clear();
-          document.getElementById('scannerModal').classList.add('hidden');
-        }).catch(() => {
-          document.getElementById('scannerModal').classList.add('hidden');
-        });
-      } else {
-        document.getElementById('scannerModal').classList.add('hidden');
+    function closeScannerModal() {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
       }
+      document.getElementById('scannerModal').style.display = 'none';
     }
 
-    function openEditModal(rowIndex) {
-      const item = products.find(p => p.rowIndex === rowIndex);
-      if (!item) return;
+    // Helper Functions
+    function openModal(mode, id = null) {
+      const modal = document.getElementById('productModal');
+      const form = document.getElementById('productForm');
+      const previewBox = document.getElementById('previewBox');
+      const previewImg = document.getElementById('previewImg');
+      
+      form.reset();
+      previewBox.style.display = 'none';
 
-      document.getElementById('editRowIndex').value = item.rowIndex;
-      document.getElementById('editLotNo').value = item.lotNo || '';
-      document.getElementById('editBarcode').value = item.barcode || '';
-      document.getElementById('editImageUrl').value = item.imageUrl || '';
-      document.getElementById('editBrand').value = item.brand || '';
-      document.getElementById('editVolume').value = item.volume || '';
-      document.getElementById('editTotalQty').value = item.totalQty || 0;
-      document.getElementById('editUnit').value = item.unit || 'ถุง';
-      document.getElementById('editRemainingQty').value = item.remainingQty || 0;
-      document.getElementById('editImportDate').value = item.importDate || '';
-      document.getElementById('editExpDate').value = item.expDate || '';
-      document.getElementById('editCostPrice').value = item.costPrice || 0;
-      document.getElementById('editSuggestedPrice').value = item.suggestedPrice || 0;
-      document.getElementById('editNote').value = item.note || '';
+      if (mode === 'add') {
+        document.getElementById('modalTitle').innerText = 'เพิ่มสินค้าใหม่';
+        document.getElementById('formAction').value = 'add';
+        document.getElementById('remainingGroup').style.display = 'none';
+        document.getElementById('imageUrl').value = '';
+      } else if (mode === 'edit') {
+        const item = allProducts.find(p => p.rowIndex === id);
+        if (!item) return;
 
-      const previewContainer = document.getElementById('editPreview');
-      const previewImg = document.getElementById('editPreviewImg');
-      if (item.imageUrl) {
-        previewImg.src = item.imageUrl;
-        previewContainer.classList.remove('hidden');
-      } else {
-        previewContainer.classList.add('hidden');
+        document.getElementById('modalTitle').innerText = 'แก้ไขสินค้า';
+        document.getElementById('formAction').value = 'edit';
+        document.getElementById('formRowIndex').value = id;
+        document.getElementById('remainingGroup').style.display = 'block';
+
+        document.getElementById('brand').value = item.brand || '';
+        document.getElementById('volume').value = item.volume || '';
+        document.getElementById('unit').value = item.unit || 'ถุง';
+        document.getElementById('totalQty').value = item.totalQty || 0;
+        document.getElementById('remainingQty').value = item.remainingQty !== undefined ? item.remainingQty : item.totalQty;
+        document.getElementById('costPrice').value = item.costPrice || '';
+        document.getElementById('suggestedPrice').value = item.suggestedPrice || '';
+        document.getElementById('importDate').value = item.importDate || '';
+        document.getElementById('expDate').value = item.expDate || '';
+        document.getElementById('imageUrl').value = item.imageUrl || '';
+        document.getElementById('barcode').value = item.barcode || '';
+        document.getElementById('lotNo').value = item.lotNo || '';
+        document.getElementById('note').value = item.note || '';
+
+        if (item.imageUrl) {
+          previewImg.src = item.imageUrl;
+          previewBox.style.display = 'block';
+        }
       }
 
-      toggleEditModal(true);
+      modal.style.display = 'flex';
     }
 
-    async function handleEditSubmit(e) {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData.entries());
-      data.action = 'edit';
-
-      toggleEditModal(false);
-      await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(data)
-      });
-      fetchData();
+    function closeModal() {
+      document.getElementById('productModal').style.display = 'none';
     }
 
-    async function handleDeleteFromModal() {
-      const rowIndex = document.getElementById('editRowIndex').value;
-      if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ Lot นี้นะ?')) return;
-      toggleEditModal(false);
-      await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete', rowIndex })
-      });
-      toggleLotsModal(false);
-      fetchData();
+    function showLoading(show) {
+      document.getElementById('statusMsg').style.display = show ? 'block' : 'none';
     }
 
-    function calcSuggestedPrice(costId, targetId) {
-      const cost = parseFloat(document.getElementById(costId).value) || 0;
-      document.getElementById(targetId).value = (cost * 1.5).toFixed(2);
+    function showStatus(html) {
+      const statusMsg = document.getElementById('statusMsg');
+      statusMsg.innerHTML = html;
+      statusMsg.style.display = 'block';
     }
-
-    async function handleDeduct(rowIndex) {
-      await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'deduct', rowIndex, deductQty: 1 })
-      });
-      fetchData();
-      toggleLotsModal(false);
-    }
-
-    async function handleAddSubmit(e) {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData.entries());
-      data.action = 'add';
-
-      toggleAddModal(false);
-      await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(data)
-      });
-      e.target.reset();
-      document.getElementById('addPreview').classList.add('hidden');
-      fetchData();
-    }
-
-    function toggleAddModal(show) {
-      document.getElementById('addModal').classList.toggle('hidden', !show);
-    }
-
-    function toggleEditModal(show) {
-      document.getElementById('editModal').classList.toggle('hidden', !show);
-    }
-
-    fetchData();
   </script>
 </body>
 </html>
