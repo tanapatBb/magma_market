@@ -405,7 +405,7 @@
     </div>
   </div>
 
-  <!-- 📑 Navigation Tabs (ปรับเปนลิงก์สลับหน้า) -->
+  <!-- 📑 Navigation Tabs -->
   <div class="tab-bar">
     <a href="index.html" class="tab-btn active">
       <i class="fa-solid fa-boxes-stacked"></i> รายการสินค้า
@@ -434,7 +434,7 @@
   <div id="cameraModal" class="modal">
     <div class="modal-content" style="text-align: center;">
       <div class="modal-header">
-        <h3>สแกนตรวจจับซองอาหาร</h3>
+        <h3>สแกนตรวจจับซองอาหาร (AI)</h3>
         <i class="fa-solid fa-xmark" onclick="closeCameraDetect()" style="cursor:pointer;"></i>
       </div>
       
@@ -443,7 +443,7 @@
         <div class="detect-overlay"></div>
       </div>
 
-      <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">จัดวางซองอาหารให้อยู่ในกรอบสีเขียว แล้วกดถ่ายรูป</p>
+      <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">จัดวางซองอาหารให้อยู่ในกรอบ แล้วกดถ่ายรูป AI จะแกะข้อความให้อัตโนมัติ</p>
 
       <button id="captureBtn" class="btn-capture" onclick="captureBagImage()">
         <i class="fa-solid fa-camera"></i> ถ่ายรูปตรวจจับ
@@ -456,7 +456,7 @@
   <div id="detectedResultModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="detectResultTitle">ผลการถ่ายภาพซองอาหาร</h3>
+        <h3 id="detectResultTitle">ผลการวิเคราะห์ซองอาหาร (AI)</h3>
         <i class="fa-solid fa-xmark" onclick="closeDetectResultModal()" style="cursor:pointer;"></i>
       </div>
 
@@ -474,7 +474,7 @@
 
         <div class="form-group">
           <label>ชื่อสินค้า / ยี่ห้อซองอาหาร *</label>
-          <input type="text" id="detectBrand" class="form-control" required placeholder="พิมพ์ยี่ห้อซองอาหาร..." oninput="updateStockDropdownOptions()">
+          <input type="text" id="detectBrand" class="form-control" required placeholder="ยี่ห้อสินค้าจะถูกกรอกให้อัตโนมัติ..." oninput="updateStockDropdownOptions()">
         </div>
 
         <div class="form-group">
@@ -844,41 +844,70 @@
       document.getElementById('cameraModal').style.display = 'none';
     }
 
+    /* 🤖 ฟังก์ชันถ่ายภาพและส่งให้ Gemini AI อ่านซองอาหาร */
     async function captureBagImage() {
       const video = document.getElementById('videoElement');
       const canvas = document.getElementById('canvasElement');
       const btn = document.getElementById('captureBtn');
 
       btn.disabled = true;
-      btn.innerText = 'กำลังประมวลผลรูปถ่าย...';
+      btn.innerText = '🤖 AI กำลังอ่านซองอาหาร...';
 
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      canvas.toBlob(async (blob) => {
-        const file = new File([blob], "bag_detect.jpg", { type: "image/jpeg" });
-        try {
-          detectedUploadedUrl = await uploadToImgBB(file);
-          closeCameraDetect();
-          
-          document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
-          
-          document.getElementById('detectForm').reset();
-          document.getElementById('detectActionType').value = "";
-          
-          populateExistingProductsDropdown();
-          toggleStockSelectView();
+      const imageBase64 = canvas.toDataURL('image/jpeg');
 
-          document.getElementById('detectedResultModal').style.display = 'flex';
-        } catch (err) {
-          alert('อัปโหลดรูปภาพไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
-        } finally {
-          btn.disabled = false;
-          btn.innerText = 'ถ่ายรูปตรวจจับ';
+      try {
+        // 1. ส่งรูปภาพให้ Gemini AI ที่ Backend
+        const aiRes = await fetch('https://magma-market-api.onrender.com/api/scan-bag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: imageBase64 })
+        });
+
+        const aiResult = await aiRes.json();
+
+        // 2. อัปโหลดฝากรูปที่ ImgBB
+        canvas.toBlob(async (blob) => {
+          try {
+            const file = new File([blob], "bag_detect.jpg", { type: "image/jpeg" });
+            detectedUploadedUrl = await uploadToImgBB(file);
+            document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
+          } catch (e) {
+            console.warn('อัปโหลด ImgBB ไม่สำเร็จ');
+          }
+        }, 'image/jpeg');
+
+        // 3. ปิดกล้องและเคลียร์ฟอร์ม
+        closeCameraDetect();
+        document.getElementById('detectForm').reset();
+        document.getElementById('detectActionType').value = "";
+
+        // 4. หยอดข้อมูลที่ AI อ่านได้ลงในช่องให้อัตโนมัติ!
+        if (aiResult.status === 'success' && aiResult.data) {
+          const { brand, volumeValue, volumeUnit } = aiResult.data;
+
+          if (brand) document.getElementById('detectBrand').value = brand;
+          if (volumeValue) document.getElementById('detectVolumeValue').value = volumeValue;
+          if (volumeUnit) document.getElementById('detectVolumeUnit').value = volumeUnit;
+        } else {
+          alert('⚠️ AI ไม่สามารถอ่านข้อมูลซองอาหารได้ชัดเจน กรุณากรอกข้อมูลเองเพิ่มเติม');
         }
-      }, 'image/jpeg');
+
+        populateExistingProductsDropdown();
+        toggleStockSelectView();
+
+        document.getElementById('detectedResultModal').style.display = 'flex';
+
+      } catch (err) {
+        alert('ไม่สามารถเชื่อมต่อระบบ AI Scan ได้ กรุณาตรวจสอบเซิร์ฟเวอร์');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'ถ่ายรูปตรวจจับ';
+      }
     }
 
     function populateExistingProductsDropdown() {
