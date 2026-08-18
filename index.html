@@ -564,7 +564,8 @@
       <form onsubmit="handleDetectSave(event)">
         <div class="form-group">
           <label>ชื่อสินค้า / ยี่ห้อซองอาหาร *</label>
-          <input type="text" id="detectBrand" class="form-control" required placeholder="เช่น อาหารแมว SmartHeart" oninput="onBrandInputChanged()">
+          <input type="text" id="detectBrand" class="form-control" required placeholder="พิมพ์หรือเลือกชื่อสินค้า..." oninput="onBrandInputChanged()" list="brandSuggestions">
+          <datalist id="brandSuggestions"></datalist>
         </div>
 
         <div class="form-group">
@@ -575,11 +576,11 @@
           </select>
         </div>
 
-        <!-- 📦 ช่องเลือกรายการสต็อกเดิมที่จะเพิ่มเข้า -->
+        <!-- 📦 ช่องเลือกรายการ LOT/สต็อกเดิมที่จะเพิ่มเข้า -->
         <div class="form-group" id="stockSelectGroup" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 8px;">
-          <label style="color:#2e7d32; font-weight:600;">เลือกรายการสต็อกที่จะเพิ่มเข้า *</label>
+          <label style="color:#2e7d32; font-weight:600;">เลือก LOT/สต็อกเดิมที่จะเพิ่มเข้า *</label>
           <select id="detectStockSelect" class="form-control" onchange="onStockSelectChange()">
-            <option value="new">+ สร้างรายการ/ขนาดใหม่</option>
+            <option value="new">+ สร้าง LOT / ขนาดใหม่</option>
           </select>
         </div>
 
@@ -683,6 +684,11 @@
         </div>
 
         <div class="form-group">
+          <label>เลข LOT สินค้า</label>
+          <input type="text" id="lotNo" class="form-control" placeholder="เช่น LOT-2026A">
+        </div>
+
+        <div class="form-group">
           <label>รูปถ่ายซองอาหาร (อัปโหลดอัตโนมัติ)</label>
           <input type="file" id="imageFile" class="form-control" accept="image/*">
         </div>
@@ -715,6 +721,7 @@
         groupProductsByBrand();
         renderGrid();
         renderDashboard();
+        updateBrandSuggestions();
       } catch (err) {
         document.getElementById('statusMsg').innerHTML = '<p style="color:red;">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</p>';
       }
@@ -729,6 +736,12 @@
         }
         groupedProducts[brandKey].push(p);
       });
+    }
+
+    function updateBrandSuggestions() {
+      const datalist = document.getElementById('brandSuggestions');
+      if (!datalist) return;
+      datalist.innerHTML = Object.keys(groupedProducts).map(b => `<option value="${b}">`).join('');
     }
 
     function renderGrid() {
@@ -837,7 +850,7 @@
       const content = items.map(item => `
         <div class="lot-item-box">
           <div>
-            <div><b>ขนาด: ${item.volume || 'ไม่ได้ระบุ'}</b></div>
+            <div><b>ขนาด: ${item.volume || 'ไม่ได้ระบุ'}</b> ${item.lotNo ? `<span style="font-size:0.75rem; color:#888;">(LOT: ${item.lotNo})</span>` : ''}</div>
             <div style="font-size: 0.8rem; color: #666;">
               คงเหลือ: <b style="color:#2e7d32;">${item.remainingQty}</b> / ${item.totalQty} ${item.unit || 'ถุง'}
               ${item.expDate ? ` | หมดอายุ: ${item.expDate}` : ''}
@@ -880,7 +893,7 @@
       document.getElementById('cameraModal').style.display = 'none';
     }
 
-    // 📸 ถ่ายรูปซองอาหาร -> ตรวจจับสินค้าเดิมอัตโนมัติ
+    // 📸 ถ่ายรูปซองอาหาร
     async function captureBagImage() {
       const video = document.getElementById('videoElement');
       const canvas = document.getElementById('canvasElement');
@@ -902,14 +915,8 @@
           
           document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
           
-          // Auto Detect: ดึงแบรนด์แรกจากฐานข้อมูลมาแสดงเป็นตัวอย่างก่อนเพื่อให้เริ่มงานได้เร็ว
-          const knownBrands = Object.keys(groupedProducts);
-          if (knownBrands.length > 0) {
-            document.getElementById('detectBrand').value = knownBrands[0];
-          } else {
-            document.getElementById('detectBrand').value = '';
-          }
-
+          // เคลียร์ช่องพิมพ์ ให้ผู้ใช้พิมพ์ยี่ห้อใหม่เองได้ หรือกดเลือกจาก Auto-complete
+          document.getElementById('detectBrand').value = '';
           document.getElementById('detectActionType').value = 'deduct';
           
           onBrandInputChanged();
@@ -924,14 +931,13 @@
       }, 'image/jpeg');
     }
 
-    // 🔍 เมื่อมีการพิมพ์/สลับชื่อแบรนด์ ให้ดึงขนาดเดิมลง Dropdown
+    // 🔍 เมื่อพิมพ์/เลือกชื่อสินค้าในช่อง Detect
     function onBrandInputChanged() {
       const brandInput = document.getElementById('detectBrand').value.trim();
       const volumeSelect = document.getElementById('detectVolumeSelect');
       
       volumeSelect.innerHTML = '<option value="">-- เลือกขนาดอาหาร --</option>';
 
-      // ค้นหาสินค้าที่มีชื่อแบรนด์ตรงกัน
       const matchedBrandKey = Object.keys(groupedProducts).find(b => b.toLowerCase() === brandInput.toLowerCase());
 
       if (matchedBrandKey) {
@@ -953,7 +959,6 @@
       updateStockDropdownOptions();
     }
 
-    // เมื่อเลือกขนาดใน Dropdown
     function onVolumeSelectChanged() {
       const val = document.getElementById('detectVolumeSelect').value;
       const customGroup = document.getElementById('customVolumeGroup');
@@ -977,11 +982,12 @@
       }
     }
 
+    // 📋 ดึงรายการ LOT เดิมของแบรนด์นี้มาให้เลือก
     function updateStockDropdownOptions() {
       const brand = document.getElementById('detectBrand').value.trim().toLowerCase();
       const select = document.getElementById('detectStockSelect');
       
-      select.innerHTML = '<option value="new">+ สร้างรายการ/ขนาดใหม่</option>';
+      select.innerHTML = '<option value="new">+ สร้าง LOT / ขนาดใหม่</option>';
 
       if (!brand) return;
 
@@ -990,7 +996,7 @@
       matchedItems.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.rowIndex;
-        opt.innerText = `ขนาด: ${item.volume || 'ไม่ระบุ'} (คงเหลือเดิม: ${item.remainingQty} ${item.unit || 'ถุง'})`;
+        opt.innerText = `LOT: ${item.lotNo || 'ทั่วไป'} | ขนาด: ${item.volume || 'ไม่ระบุ'} (คงเหลือเดิม: ${item.remainingQty} ${item.unit || 'ถุง'})`;
         select.appendChild(opt);
       });
     }
@@ -1029,6 +1035,7 @@
 
       if (actionType === 'addQty') {
         if (selectedStockId !== 'new') {
+          // เพิ่มเข้าสต็อกเดิมที่เลือก
           const targetItem = allProducts.find(p => p.rowIndex === selectedStockId);
           if (targetItem) {
             const newTotal = (targetItem.totalQty || 0) + qty;
@@ -1045,6 +1052,7 @@
             });
           }
         } else {
+          // สร้าง LOT / สต็อกใหม่
           await sendApiRequest({
             action: 'add',
             brand: brand,
@@ -1055,6 +1063,7 @@
           });
         }
       } else {
+        // ตัดสต็อก (-)
         const existingItem = allProducts.find(p => p.brand.toLowerCase() === brand.toLowerCase() && p.volume === volume);
         if (existingItem) {
           const newQty = Math.max(0, existingItem.remainingQty - qty);
@@ -1148,6 +1157,7 @@
         suggestedPrice: Number(document.getElementById('suggestedPrice').value) || 0,
         importDate: document.getElementById('importDate').value,
         expDate: document.getElementById('expDate').value,
+        lotNo: document.getElementById('lotNo').value,
         imageUrl: finalImg,
         note: document.getElementById('note').value
       };
@@ -1235,6 +1245,7 @@
         document.getElementById('suggestedPrice').value = item.suggestedPrice || '';
         document.getElementById('importDate').value = item.importDate || '';
         document.getElementById('expDate').value = item.expDate || '';
+        document.getElementById('lotNo').value = item.lotNo || '';
         document.getElementById('imageUrl').value = item.imageUrl || '';
         document.getElementById('note').value = item.note || '';
       }
