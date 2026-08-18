@@ -564,7 +564,7 @@
       <form onsubmit="handleDetectSave(event)">
         <div class="form-group">
           <label>ชื่อสินค้า / ยี่ห้อซองอาหาร *</label>
-          <input type="text" id="detectBrand" class="form-control" required placeholder="เช่น อาหารแมว SmartHeart" oninput="updateStockDropdownOptions()">
+          <input type="text" id="detectBrand" class="form-control" required placeholder="เช่น อาหารแมว SmartHeart" oninput="onBrandInputChanged()">
         </div>
 
         <div class="form-group">
@@ -575,7 +575,7 @@
           </select>
         </div>
 
-        <!-- 📦 ช่องเลือกรายการสต็อกเดิมที่จะเพิ่มเข้า (แสดงเฉพาะตอนเลือกเพิ่มเข้าสต็อก) -->
+        <!-- 📦 ช่องเลือกรายการสต็อกเดิมที่จะเพิ่มเข้า -->
         <div class="form-group" id="stockSelectGroup" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 8px;">
           <label style="color:#2e7d32; font-weight:600;">เลือกรายการสต็อกที่จะเพิ่มเข้า *</label>
           <select id="detectStockSelect" class="form-control" onchange="onStockSelectChange()">
@@ -583,9 +583,19 @@
           </select>
         </div>
 
+        <!-- 🏷️ Dropdown ตัวเลือกขนาดอาหารที่มีในระบบ -->
         <div class="form-group">
-          <label>ขนาดอาหาร (ระบุ เช่น 500g, 1.2kg, 3kg) *</label>
-          <input type="text" id="detectVolume" class="form-control" required placeholder="เช่น 1kg">
+          <label>ขนาดอาหาร *</label>
+          <select id="detectVolumeSelect" class="form-control" onchange="onVolumeSelectChanged()">
+            <option value="">-- เลือกขนาดอาหาร --</option>
+            <option value="custom">+ กรอกขนาดใหม่...</option>
+          </select>
+        </div>
+
+        <!-- ช่องพิมพ์ขนาดกรณีเลือกขนาดใหม่ -->
+        <div class="form-group" id="customVolumeGroup" style="display: none;">
+          <label>ระบุขนาดอาหารใหม่ *</label>
+          <input type="text" id="detectCustomVolume" class="form-control" placeholder="เช่น 500g, 1.2kg">
         </div>
 
         <div class="form-group">
@@ -698,7 +708,6 @@
 
     document.addEventListener('DOMContentLoaded', loadProducts);
 
-    // 🔄 โหลดข้อมูล
     async function loadProducts() {
       try {
         const res = await fetch(API_URL);
@@ -711,7 +720,6 @@
       }
     }
 
-    // 📦 รวมสินค้าที่แบรนด์เดียวกันเป็น Group เดียวกัน
     function groupProductsByBrand() {
       groupedProducts = {};
       allProducts.forEach(p => {
@@ -723,7 +731,6 @@
       });
     }
 
-    // 🃏 วาด Card สินค้าบนหน้าเว็บ
     function renderGrid() {
       const grid = document.getElementById('productGrid');
       document.getElementById('statusMsg').style.display = 'none';
@@ -766,7 +773,6 @@
       }).join('');
     }
 
-    // 📊 วาด Dashboard สรุปยอด
     function renderDashboard() {
       let totalRemaining = 0;
       let totalDeducted = 0;
@@ -809,7 +815,6 @@
       }).join('');
     }
 
-    // 🔍 สลับ Tab สินค้า / Dashboard
     function switchTab(tabName) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
@@ -823,7 +828,6 @@
       }
     }
 
-    // 🔍 เปิด Modal แสดงรายละเอียดสินค้าเมื่อกด Card
     function openCardDetailModal(brandName) {
       const items = groupedProducts[brandName];
       if (!items) return;
@@ -854,7 +858,7 @@
       document.getElementById('cardDetailModal').style.display = 'none';
     }
 
-    // 📸 เปิดกล้อง Detect ซองอาหาร
+    // 📸 เปิดกล้อง Detect
     async function openCameraDetect() {
       document.getElementById('cameraModal').style.display = 'flex';
       const video = document.getElementById('videoElement');
@@ -876,14 +880,14 @@
       document.getElementById('cameraModal').style.display = 'none';
     }
 
-    // 📸 ถ่ายรูปซองอาหาร -> เปิดหน้าระบุขนาด/เลือกสต็อก
+    // 📸 ถ่ายรูปซองอาหาร -> ตรวจจับสินค้าเดิมอัตโนมัติ
     async function captureBagImage() {
       const video = document.getElementById('videoElement');
       const canvas = document.getElementById('canvasElement');
       const btn = document.getElementById('captureBtn');
 
       btn.disabled = true;
-      btn.innerText = 'กำลังตรวจจับและอัปโหลดรูป...';
+      btn.innerText = 'กำลังตรวจจับสินค้า...';
 
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
@@ -897,10 +901,18 @@
           closeCameraDetect();
           
           document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
-          document.getElementById('detectBrand').value = '';
-          document.getElementById('detectVolume').value = '';
+          
+          // Auto Detect: ดึงแบรนด์แรกจากฐานข้อมูลมาแสดงเป็นตัวอย่างก่อนเพื่อให้เริ่มงานได้เร็ว
+          const knownBrands = Object.keys(groupedProducts);
+          if (knownBrands.length > 0) {
+            document.getElementById('detectBrand').value = knownBrands[0];
+          } else {
+            document.getElementById('detectBrand').value = '';
+          }
+
           document.getElementById('detectActionType').value = 'deduct';
           
+          onBrandInputChanged();
           toggleStockSelectView();
           document.getElementById('detectedResultModal').style.display = 'flex';
         } catch (err) {
@@ -912,7 +924,47 @@
       }, 'image/jpeg');
     }
 
-    // 🔄 สลับมุมมองช่องเลือกรายการสต็อกเดิม (เมื่อเลือก เพิ่มเข้าสต็อก)
+    // 🔍 เมื่อมีการพิมพ์/สลับชื่อแบรนด์ ให้ดึงขนาดเดิมลง Dropdown
+    function onBrandInputChanged() {
+      const brandInput = document.getElementById('detectBrand').value.trim();
+      const volumeSelect = document.getElementById('detectVolumeSelect');
+      
+      volumeSelect.innerHTML = '<option value="">-- เลือกขนาดอาหาร --</option>';
+
+      // ค้นหาสินค้าที่มีชื่อแบรนด์ตรงกัน
+      const matchedBrandKey = Object.keys(groupedProducts).find(b => b.toLowerCase() === brandInput.toLowerCase());
+
+      if (matchedBrandKey) {
+        const items = groupedProducts[matchedBrandKey];
+        items.forEach(item => {
+          const vol = item.volume || 'ทั่วไป';
+          const opt = document.createElement('option');
+          opt.value = vol;
+          opt.innerText = `${vol} (คงเหลือ: ${item.remainingQty} ${item.unit || 'ถุง'})`;
+          volumeSelect.appendChild(opt);
+        });
+      }
+
+      const customOpt = document.createElement('option');
+      customOpt.value = 'custom';
+      customOpt.innerText = '+ กรอกขนาดใหม่...';
+      volumeSelect.appendChild(customOpt);
+
+      updateStockDropdownOptions();
+    }
+
+    // เมื่อเลือกขนาดใน Dropdown
+    function onVolumeSelectChanged() {
+      const val = document.getElementById('detectVolumeSelect').value;
+      const customGroup = document.getElementById('customVolumeGroup');
+
+      if (val === 'custom') {
+        customGroup.style.display = 'block';
+      } else {
+        customGroup.style.display = 'none';
+      }
+    }
+
     function toggleStockSelectView() {
       const actionType = document.getElementById('detectActionType').value;
       const stockGroup = document.getElementById('stockSelectGroup');
@@ -925,7 +977,6 @@
       }
     }
 
-    // 📋 ดึงรายการสต็อกเดิมของสินค้านั้นๆ มาใส่ใน Dropdown
     function updateStockDropdownOptions() {
       const brand = document.getElementById('detectBrand').value.trim().toLowerCase();
       const select = document.getElementById('detectStockSelect');
@@ -944,31 +995,40 @@
       });
     }
 
-    // 🎯 เมื่อเลือกรายการสต็อกใน Dropdown ให้ดึงขนาดมาเติมอัตโนมัติ
     function onStockSelectChange() {
       const selectedId = document.getElementById('detectStockSelect').value;
       if (selectedId !== 'new') {
         const item = allProducts.find(p => p.rowIndex === selectedId);
         if (item) {
-          document.getElementById('detectVolume').value = item.volume || '';
+          const volumeSelect = document.getElementById('detectVolumeSelect');
+          volumeSelect.value = item.volume || '';
+          onVolumeSelectChanged();
         }
       }
     }
 
-    // 💾 บันทึกข้อมูลจากการ Detect ซองอาหาร
+    // 💾 บันทึกการ Detect
     async function handleDetectSave(e) {
       e.preventDefault();
       
       const brand = document.getElementById('detectBrand').value.trim();
-      const volume = document.getElementById('detectVolume').value.trim();
+      let volume = document.getElementById('detectVolumeSelect').value;
+
+      if (volume === 'custom') {
+        volume = document.getElementById('detectCustomVolume').value.trim();
+      }
+
+      if (!volume) {
+        alert('กรุณาเลือกหรือระบุขนาดอาหาร');
+        return;
+      }
+
       const qty = Number(document.getElementById('detectQty').value) || 1;
       const actionType = document.getElementById('detectActionType').value;
       const selectedStockId = document.getElementById('detectStockSelect').value;
 
       if (actionType === 'addQty') {
-        // กรณีเลือกเพิ่มเข้าสต็อก
         if (selectedStockId !== 'new') {
-          // เพิ่มเข้าในรายการสต็อกเดิมที่เลือก
           const targetItem = allProducts.find(p => p.rowIndex === selectedStockId);
           if (targetItem) {
             const newTotal = (targetItem.totalQty || 0) + qty;
@@ -985,7 +1045,6 @@
             });
           }
         } else {
-          // เพิ่มเป็นสินค้า/ขนาดรายการใหม่
           await sendApiRequest({
             action: 'add',
             brand: brand,
@@ -996,7 +1055,6 @@
           });
         }
       } else {
-        // กรณีเลือกตัดสต็อก (-)
         const existingItem = allProducts.find(p => p.brand.toLowerCase() === brand.toLowerCase() && p.volume === volume);
         if (existingItem) {
           const newQty = Math.max(0, existingItem.remainingQty - qty);
@@ -1023,7 +1081,6 @@
       document.getElementById('detectedResultModal').style.display = 'none';
     }
 
-    // ☁️ Helper อัปโหลด ImgBB
     async function uploadToImgBB(file) {
       const formData = new FormData();
       formData.append('image', file);
@@ -1033,7 +1090,6 @@
       throw new Error('Upload failed');
     }
 
-    // 🔄 Helper เรียก API Backend บน Render
     async function sendApiRequest(payload) {
       try {
         const res = await fetch(API_URL, {
@@ -1052,7 +1108,6 @@
       }
     }
 
-    // Actions ตัด / ลบ
     async function handleDeduct(id, name) {
       if (confirm(`ยืนยันการตัดสต็อก (-1) ของ "${name}"?`)) {
         await sendApiRequest({ action: 'deduct', rowIndex: id, deductQty: 1 });
@@ -1067,7 +1122,6 @@
       }
     }
 
-    // ฟอร์มบันทึกนำเข้าปกติ
     async function saveProduct(e) {
       e.preventDefault();
       const action = document.getElementById('formAction').value;
