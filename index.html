@@ -130,6 +130,7 @@
       font-weight: 600;
       color: var(--text-muted);
       cursor: pointer;
+      text-decoration: none;
       border-bottom: 3px solid transparent;
       transition: all 0.2s;
     }
@@ -144,14 +145,6 @@
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 15px;
-    }
-
-    .view-section {
-      display: none;
-    }
-
-    .view-section.active {
-      display: block;
     }
 
     /* 🔍 Search Bar */
@@ -269,64 +262,6 @@
     .btn-deduct { background-color: #e3f2fd; color: #1565c0; }
     .btn-edit { background-color: #fff3e0; color: #ef6c00; }
     .btn-delete { background-color: #ffebee; color: #c62828; }
-
-    /* 📊 Dashboard Summary Cards */
-    .dashboard-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 18px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow);
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .stat-icon {
-      width: 50px;
-      height: 50px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-    }
-
-    .stat-info h4 { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
-    .stat-info div { font-size: 1.4rem; font-weight: 600; color: var(--text); }
-
-    /* Dashboard Table */
-    .dashboard-table-box {
-      background: white;
-      border-radius: var(--border-radius);
-      padding: 15px;
-      box-shadow: var(--shadow);
-      overflow-x: auto;
-    }
-
-    .dash-table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 0.9rem;
-    }
-
-    .dash-table th, .dash-table td {
-      padding: 12px 10px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .dash-table th {
-      background: #fafafa;
-      color: var(--text-muted);
-      font-weight: 600;
-    }
 
     /* Modals */
     .modal {
@@ -470,85 +405,29 @@
     </div>
   </div>
 
-  <!-- 📑 Navigation Tabs -->
+  <!-- 📑 Navigation Tabs (ปรับเปนลิงก์สลับหน้า) -->
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('products')">
+    <a href="index.html" class="tab-btn active">
       <i class="fa-solid fa-boxes-stacked"></i> รายการสินค้า
-    </button>
-    <button class="tab-btn" onclick="switchTab('dashboard')">
+    </a>
+    <a href="dashboard.html" class="tab-btn">
       <i class="fa-solid fa-chart-pie"></i> Dashboard สรุปยอด
-    </button>
+    </a>
   </div>
 
   <div class="container">
-    
-    <!-- 📦 VIEW 1: รายการสินค้า -->
-    <div id="productsView" class="view-section active">
-      <div class="controls">
-        <div class="search-box">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อซองอาหาร, ยี่ห้อ, ขนาด..." oninput="filterProducts()">
-        </div>
-      </div>
-
-      <div id="productGrid" class="product-grid"></div>
-
-      <div id="statusMsg" style="text-align: center; padding: 40px; color: #888;">
-        <p>กำลังโหลดรายการสินค้า...</p>
+    <div class="controls">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อซองอาหาร, ยี่ห้อ, ขนาด..." oninput="filterProducts()">
       </div>
     </div>
 
-    <!-- 📊 VIEW 2: Dashboard -->
-    <div id="dashboardView" class="view-section">
-      <div class="dashboard-stats">
-        <div class="stat-card">
-          <div class="stat-icon" style="background:#e8f5e9; color:#2e7d32;">
-            <i class="fa-solid fa-cubes"></i>
-          </div>
-          <div class="stat-info">
-            <h4>สินค้าคงเหลือรวม</h4>
-            <div id="dashTotalRemaining">0</div>
-          </div>
-        </div>
+    <div id="productGrid" class="product-grid"></div>
 
-        <div class="stat-card">
-          <div class="stat-icon" style="background:#ffebee; color:#c62828;">
-            <i class="fa-solid fa-dolly"></i>
-          </div>
-          <div class="stat-info">
-            <h4>จำนวนที่ตัดออกไป (ขาย/เบิก)</h4>
-            <div id="dashTotalDeducted">0</div>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon" style="background:#e3f2fd; color:#1565c0;">
-            <i class="fa-solid fa-sack-dollar"></i>
-          </div>
-          <div class="stat-info">
-            <h4>มูลค่าสต็อกคงเหลือ</h4>
-            <div id="dashTotalValue">฿0</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="dashboard-table-box">
-        <h3 style="margin-bottom: 12px; font-size: 1.05rem;">📋 ตารางสรุปสต็อกและการตัดสินค้า</h3>
-        <table class="dash-table">
-          <thead>
-            <tr>
-              <th>ชื่อสินค้า/ยี่ห้อ</th>
-              <th>จำนวน LOT</th>
-              <th>นำเข้าทั้งหมด</th>
-              <th>ตัดออกไปแล้ว</th>
-              <th>คงเหลือปัจจุบัน</th>
-            </tr>
-          </thead>
-          <tbody id="dashTableBody"></tbody>
-        </table>
-      </div>
+    <div id="statusMsg" style="text-align: center; padding: 40px; color: #888;">
+      <p>กำลังโหลดรายการสินค้า...</p>
     </div>
-
   </div>
 
   <!-- 🪟 Modal 1: กล้อง Detect ซองอาหาร -->
@@ -586,7 +465,6 @@
       </div>
 
       <form id="detectForm" onsubmit="handleDetectSave(event)">
-        <!-- 🔍 ดรอปดาวน์เลือกสินค้าเดิมที่มีในระบบ -->
         <div class="form-group" style="background:#f0f4f8; padding:10px; border-radius:8px;">
           <label style="font-weight:600; color:#1565c0;">🔍 เลือกรายการสินค้าเดิมในระบบ (ถ้ามี):</label>
           <select id="existingProductSelect" class="form-control" onchange="onExistingProductSelected()">
@@ -608,7 +486,6 @@
           </select>
         </div>
 
-        <!-- 📦 เลือก LOT สต็อกเดิม -->
         <div class="form-group" id="stockSelectGroup" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 8px;">
           <label style="color:#2e7d32; font-weight:600;">เลือก LOT เดิมที่จะเติมสต็อกเข้า *</label>
           <select id="detectStockSelect" class="form-control" onchange="onStockSelectChange()">
@@ -616,7 +493,6 @@
           </select>
         </div>
 
-        <!-- ⚖️ แยกขนาดอาหารเป็น "ตัวเลข" และ "หน่วยนับ" -->
         <div class="form-row">
           <div class="form-group">
             <label>ขนาดตัวเลข *</label>
@@ -639,7 +515,6 @@
           <input type="number" id="detectQty" class="form-control" value="1" min="1" required>
         </div>
 
-        <!-- 💰 คิดราคาขายอัตโนมัติจาก % กำไร -->
         <div class="form-row">
           <div class="form-group">
             <label>ราคาต้นทุน (บาท)</label>
@@ -667,7 +542,6 @@
           <input type="number" id="detectSuggestedPrice" class="form-control" step="0.01" placeholder="0.00">
         </div>
 
-        <!-- 📅 วันหมดอายุ + ปุ่มทางลัด -->
         <div class="form-group">
           <label>วันหมดอายุ</label>
           <input type="date" id="detectExpDate" class="form-control">
@@ -828,7 +702,6 @@
         allProducts = await res.json();
         groupProductsByBrand();
         renderGrid();
-        renderDashboard();
       } catch (err) {
         document.getElementById('statusMsg').innerHTML = '<p style="color:red;">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</p>';
       }
@@ -845,7 +718,6 @@
       });
     }
 
-    /* 📈 คำนวณราคาขายอัตโนมัติจาก % กำไร */
     function calculateSuggestedPrice(prefix) {
       const costId = prefix === 'detect' ? 'detectCostPrice' : 'costPrice';
       const percentId = prefix === 'detect' ? 'detectProfitPercent' : 'profitPercent';
@@ -856,11 +728,10 @@
 
       if (cost > 0) {
         const calculated = cost + (cost * (percent / 100));
-        document.getElementById(suggestedId).value = Math.ceil(calculated); // ปัดเศษขึ้นเป็นจำนวนเต็ม
+        document.getElementById(suggestedId).value = Math.ceil(calculated);
       }
     }
 
-    /* 📅 ตั้งค่าวันหมดอายุทางลัด (3 เดือน, 6 เดือน, 1 ปี, ไม่มีวันหมดอายุ) */
     function setExpMonths(prefix, months) {
       const expInputId = prefix === 'detect' ? 'detectExpDate' : 'expDate';
       const input = document.getElementById(expInputId);
@@ -920,61 +791,6 @@
           </div>
         `;
       }).join('');
-    }
-
-    function renderDashboard() {
-      let totalRemaining = 0;
-      let totalDeducted = 0;
-      let totalValue = 0;
-
-      allProducts.forEach(p => {
-        const remaining = p.remainingQty || 0;
-        const total = p.totalQty || 0;
-        const deducted = Math.max(0, total - remaining);
-        const price = p.suggestedPrice || p.costPrice || 0;
-
-        totalRemaining += remaining;
-        totalDeducted += deducted;
-        totalValue += (remaining * price);
-      });
-
-      document.getElementById('dashTotalRemaining').innerText = totalRemaining.toLocaleString() + ' ชิ้น';
-      document.getElementById('dashTotalDeducted').innerText = totalDeducted.toLocaleString() + ' ชิ้น';
-      document.getElementById('dashTotalValue').innerText = '฿' + totalValue.toLocaleString();
-
-      const tbody = document.getElementById('dashTableBody');
-      const brands = Object.keys(groupedProducts);
-
-      tbody.innerHTML = brands.map(b => {
-        const items = groupedProducts[b];
-        const totalLots = items.length;
-        const totalIn = items.reduce((s, i) => s + (i.totalQty || 0), 0);
-        const totalRem = items.reduce((s, i) => s + (i.remainingQty || 0), 0);
-        const totalDed = Math.max(0, totalIn - totalRem);
-
-        return `
-          <tr>
-            <td><b>${b}</b></td>
-            <td>${totalLots} LOT</td>
-            <td>${totalIn}</td>
-            <td style="color:#c62828;">-${totalDed}</td>
-            <td style="color:#2e7d32;"><b>${totalRem}</b></td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function switchTab(tabName) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-
-      if (tabName === 'products') {
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        document.getElementById('productsView').classList.add('active');
-      } else {
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('dashboardView').classList.add('active');
-      }
     }
 
     function openCardDetailModal(brandName) {
@@ -1097,7 +913,6 @@
       if (item) {
         document.getElementById('detectBrand').value = item.brand || '';
         
-        // แยกตัวเลขและหน่วยจากข้อความ volume เดิม
         if (item.volume) {
           const match = item.volume.match(/^([\d.]+)\s*(.*)$/);
           if (match) {
@@ -1190,7 +1005,6 @@
 
       if (actionType === 'addQty') {
         if (selectedStockId !== 'new') {
-          // สั่งเติมจำนวนเข้าสต็อก LOT เดิม
           const targetItem = allProducts.find(p => p.rowIndex === selectedStockId);
           if (targetItem) {
             const newTotal = (targetItem.totalQty || 0) + qty;
@@ -1211,7 +1025,6 @@
             });
           }
         } else {
-          // บังคับส่ง action: 'add' สั่งสร้าง Record ใหม่ใน MongoDB (ไม่ทับ LOT เก่า)
           await sendApiRequest({
             action: 'add',
             brand: brand,
@@ -1226,7 +1039,6 @@
           });
         }
       } else {
-        // ตัดสต็อก (-)
         const existingItem = allProducts.find(p => p.brand.toLowerCase() === brand.toLowerCase() && p.volume === combinedVolume);
         if (existingItem) {
           const newQty = Math.max(0, existingItem.remainingQty - qty);
