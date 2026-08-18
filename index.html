@@ -429,6 +429,30 @@
       align-items: center;
       border: 1px solid #eee;
     }
+
+    /* 🏷️ Quick Option Buttons */
+    .quick-btn-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-quick {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      padding: 4px 10px;
+      border-radius: 15px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-quick:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -575,7 +599,6 @@
           <input type="text" id="detectBrand" class="form-control" required placeholder="พิมพ์ยี่ห้อซองอาหาร..." oninput="updateStockDropdownOptions()">
         </div>
 
-        <!-- 🛑 การกระทำบังคับเลือกเป็นค่าว่างเริ่มต้น -->
         <div class="form-group">
           <label>การกระทำ *</label>
           <select id="detectActionType" class="form-control" required onchange="toggleStockSelectView()">
@@ -585,7 +608,7 @@
           </select>
         </div>
 
-        <!-- 📦 ช่องเลือกรายการ LOT สต็อกเดิมที่มีอยู่จริง -->
+        <!-- 📦 เลือก LOT สต็อกเดิม -->
         <div class="form-group" id="stockSelectGroup" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 8px;">
           <label style="color:#2e7d32; font-weight:600;">เลือก LOT เดิมที่จะเติมสต็อกเข้า *</label>
           <select id="detectStockSelect" class="form-control" onchange="onStockSelectChange()">
@@ -593,37 +616,72 @@
           </select>
         </div>
 
+        <!-- ⚖️ แยกขนาดอาหารเป็น "ตัวเลข" และ "หน่วยนับ" -->
         <div class="form-row">
           <div class="form-group">
-            <label>ขนาดอาหาร (เช่น 1kg, 500g) *</label>
-            <input type="text" id="detectVolume" class="form-control" placeholder="เช่น 1kg" required>
+            <label>ขนาดตัวเลข *</label>
+            <input type="number" id="detectVolumeValue" class="form-control" step="any" placeholder="เช่น 500, 1.2" required>
           </div>
           <div class="form-group">
-            <label>จำนวน (ถุง/ชิ้น) *</label>
-            <input type="number" id="detectQty" class="form-control" value="1" min="1" required>
+            <label>หน่วยขนาด *</label>
+            <select id="detectVolumeUnit" class="form-control">
+              <option value="g">กรัม (g)</option>
+              <option value="kg" selected>กิโลกรัม (kg)</option>
+              <option value="ml">มิลลิลิตร (ml)</option>
+              <option value="L">ลิตร (L)</option>
+              <option value="ชิ้น">ชิ้น</option>
+            </select>
           </div>
         </div>
 
+        <div class="form-group">
+          <label>จำนวนนำเข้า/ตัดออก (ถุง/ชิ้น) *</label>
+          <input type="number" id="detectQty" class="form-control" value="1" min="1" required>
+        </div>
+
+        <!-- 💰 คิดราคาขายอัตโนมัติจาก % กำไร -->
         <div class="form-row">
           <div class="form-group">
             <label>ราคาต้นทุน (บาท)</label>
-            <input type="number" id="detectCostPrice" class="form-control" step="0.01" placeholder="0.00">
+            <input type="number" id="detectCostPrice" class="form-control" step="0.01" placeholder="0.00" oninput="calculateSuggestedPrice('detect')">
           </div>
           <div class="form-group">
-            <label>ราคาขาย (บาท)</label>
-            <input type="number" id="detectSuggestedPrice" class="form-control" step="0.01" placeholder="0.00">
+            <label>บวกกำไร (%)</label>
+            <select id="detectProfitPercent" class="form-control" onchange="calculateSuggestedPrice('detect')">
+              <option value="0">-- ไม่บวก --</option>
+              <option value="40">40%</option>
+              <option value="50">50%</option>
+              <option value="60">60%</option>
+              <option value="70">70%</option>
+              <option value="80">80%</option>
+              <option value="90">90%</option>
+              <option value="100">100%</option>
+              <option value="120">120%</option>
+              <option value="150">150%</option>
+            </select>
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>วันหมดอายุ</label>
-            <input type="date" id="detectExpDate" class="form-control">
+        <div class="form-group">
+          <label>ราคาขายคำนวณอัตโนมัติ (บาท)</label>
+          <input type="number" id="detectSuggestedPrice" class="form-control" step="0.01" placeholder="0.00">
+        </div>
+
+        <!-- 📅 วันหมดอายุ + ปุ่มทางลัด -->
+        <div class="form-group">
+          <label>วันหมดอายุ</label>
+          <input type="date" id="detectExpDate" class="form-control">
+          <div class="quick-btn-group">
+            <button type="button" class="btn-quick" onclick="setExpMonths('detect', 3)">+3 เดือน</button>
+            <button type="button" class="btn-quick" onclick="setExpMonths('detect', 6)">+6 เดือน</button>
+            <button type="button" class="btn-quick" onclick="setExpMonths('detect', 12)">+1 ปี</button>
+            <button type="button" class="btn-quick" onclick="setExpMonths('detect', 0)">ไม่มีวันหมดอายุ</button>
           </div>
-          <div class="form-group">
-            <label>เลข LOT สินค้า</label>
-            <input type="text" id="detectLotNo" class="form-control" placeholder="เช่น LOT-01">
-          </div>
+        </div>
+
+        <div class="form-group">
+          <label>เลข LOT สินค้า</label>
+          <input type="text" id="detectLotNo" class="form-control" placeholder="เช่น LOT-01">
         </div>
 
         <button type="submit" id="btnDetectSubmit" class="btn-submit">บันทึกข้อมูลเรียบร้อย</button>
@@ -663,12 +721,18 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>ขนาด / ปริมาตร (เช่น 1kg)</label>
-            <input type="text" id="volume" class="form-control" placeholder="เช่น 500g, 1kg">
+            <label>ขนาดตัวเลข *</label>
+            <input type="number" id="volumeValue" class="form-control" step="any" placeholder="เช่น 500, 1" required>
           </div>
           <div class="form-group">
-            <label>หน่วยนับ</label>
-            <input type="text" id="unit" class="form-control" value="ถุง">
+            <label>หน่วยขนาด *</label>
+            <select id="volumeUnit" class="form-control">
+              <option value="g">กรัม (g)</option>
+              <option value="kg" selected>กิโลกรัม (kg)</option>
+              <option value="ml">มิลลิลิตร (ml)</option>
+              <option value="L">ลิตร (L)</option>
+              <option value="ชิ้น">ชิ้น</option>
+            </select>
           </div>
         </div>
 
@@ -686,12 +750,28 @@
         <div class="form-row">
           <div class="form-group">
             <label>ราคาต้นทุน</label>
-            <input type="number" id="costPrice" class="form-control" step="0.01">
+            <input type="number" id="costPrice" class="form-control" step="0.01" oninput="calculateSuggestedPrice('full')">
           </div>
           <div class="form-group">
-            <label>ราคาขาย</label>
-            <input type="number" id="suggestedPrice" class="form-control" step="0.01">
+            <label>บวกกำไร (%)</label>
+            <select id="profitPercent" class="form-control" onchange="calculateSuggestedPrice('full')">
+              <option value="0">-- ไม่บวก --</option>
+              <option value="40">40%</option>
+              <option value="50">50%</option>
+              <option value="60">60%</option>
+              <option value="70">70%</option>
+              <option value="80">80%</option>
+              <option value="90">90%</option>
+              <option value="100">100%</option>
+              <option value="120">120%</option>
+              <option value="150">150%</option>
+            </select>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label>ราคาขายคำนวณอัตโนมัติ (บาท)</label>
+          <input type="number" id="suggestedPrice" class="form-control" step="0.01">
         </div>
 
         <div class="form-row">
@@ -702,6 +782,12 @@
           <div class="form-group">
             <label>วันหมดอายุ</label>
             <input type="date" id="expDate" class="form-control">
+            <div class="quick-btn-group">
+              <button type="button" class="btn-quick" onclick="setExpMonths('full', 3)">+3 เดือน</button>
+              <button type="button" class="btn-quick" onclick="setExpMonths('full', 6)">+6 เดือน</button>
+              <button type="button" class="btn-quick" onclick="setExpMonths('full', 12)">+1 ปี</button>
+              <button type="button" class="btn-quick" onclick="setExpMonths('full', 0)">ไม่มีวันหมดอายุ</button>
+            </div>
           </div>
         </div>
 
@@ -757,6 +843,41 @@
         }
         groupedProducts[brandKey].push(p);
       });
+    }
+
+    /* 📈 คำนวณราคาขายอัตโนมัติจาก % กำไร */
+    function calculateSuggestedPrice(prefix) {
+      const costId = prefix === 'detect' ? 'detectCostPrice' : 'costPrice';
+      const percentId = prefix === 'detect' ? 'detectProfitPercent' : 'profitPercent';
+      const suggestedId = prefix === 'detect' ? 'detectSuggestedPrice' : 'suggestedPrice';
+
+      const cost = parseFloat(document.getElementById(costId).value) || 0;
+      const percent = parseFloat(document.getElementById(percentId).value) || 0;
+
+      if (cost > 0) {
+        const calculated = cost + (cost * (percent / 100));
+        document.getElementById(suggestedId).value = Math.ceil(calculated); // ปัดเศษขึ้นเป็นจำนวนเต็ม
+      }
+    }
+
+    /* 📅 ตั้งค่าวันหมดอายุทางลัด (3 เดือน, 6 เดือน, 1 ปี, ไม่มีวันหมดอายุ) */
+    function setExpMonths(prefix, months) {
+      const expInputId = prefix === 'detect' ? 'detectExpDate' : 'expDate';
+      const input = document.getElementById(expInputId);
+
+      if (months === 0) {
+        input.value = '';
+        return;
+      }
+
+      const today = new Date();
+      today.setMonth(today.getMonth() + months);
+      
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+
+      input.value = `${year}-${month}-${day}`;
     }
 
     function renderGrid() {
@@ -868,7 +989,7 @@
             <div><b>ขนาด: ${item.volume || 'ไม่ได้ระบุ'}</b> ${item.lotNo ? `<span style="font-size:0.75rem; color:#888;">(LOT: ${item.lotNo})</span>` : ''}</div>
             <div style="font-size: 0.8rem; color: #666;">
               คงเหลือ: <b style="color:#2e7d32;">${item.remainingQty}</b> / ${item.totalQty} ${item.unit || 'ถุง'}
-              ${item.expDate ? ` | หมดอายุ: ${item.expDate}` : ''}
+              ${item.expDate ? ` | หมดอายุ: ${item.expDate}` : ' | ไม่ระบุหมดอายุ'}
             </div>
           </div>
           <div style="display:flex; gap:4px;">
@@ -928,7 +1049,6 @@
           
           document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
           
-          // ล้างฟอร์มใหม่ + ตั้งค่าการกระทำเป็นค่าว่าง
           document.getElementById('detectForm').reset();
           document.getElementById('detectActionType').value = "";
           
@@ -957,7 +1077,6 @@
       });
     }
 
-    // เมื่อเลือกสินค้าเดิม ล้างการกระทำเป็นค่าว่าง
     function onExistingProductSelected() {
       const selectedId = document.getElementById('existingProductSelect').value;
       
@@ -966,7 +1085,7 @@
 
       if (!selectedId) {
         document.getElementById('detectBrand').value = '';
-        document.getElementById('detectVolume').value = '';
+        document.getElementById('detectVolumeValue').value = '';
         document.getElementById('detectCostPrice').value = '';
         document.getElementById('detectSuggestedPrice').value = '';
         document.getElementById('detectExpDate').value = '';
@@ -977,7 +1096,18 @@
       const item = allProducts.find(p => p.rowIndex === selectedId);
       if (item) {
         document.getElementById('detectBrand').value = item.brand || '';
-        document.getElementById('detectVolume').value = item.volume || '';
+        
+        // แยกตัวเลขและหน่วยจากข้อความ volume เดิม
+        if (item.volume) {
+          const match = item.volume.match(/^([\d.]+)\s*(.*)$/);
+          if (match) {
+            document.getElementById('detectVolumeValue').value = match[1];
+            if (match[2]) document.getElementById('detectVolumeUnit').value = match[2];
+          } else {
+            document.getElementById('detectVolumeValue').value = item.volume;
+          }
+        }
+
         document.getElementById('detectCostPrice').value = item.costPrice || '';
         document.getElementById('detectSuggestedPrice').value = item.suggestedPrice || '';
         document.getElementById('detectExpDate').value = item.expDate || '';
@@ -998,7 +1128,6 @@
       }
     }
 
-    // แสดงเฉพาะรายการที่มีจริง ตัดตัวหนังสือ (คงเหลือเดิม: ...) ออก
     function updateStockDropdownOptions() {
       const brand = document.getElementById('detectBrand').value.trim().toLowerCase();
       const select = document.getElementById('detectStockSelect');
@@ -1022,7 +1151,13 @@
       if (selectedId !== 'new') {
         const item = allProducts.find(p => p.rowIndex === selectedId);
         if (item) {
-          document.getElementById('detectVolume').value = item.volume || '';
+          if (item.volume) {
+            const match = item.volume.match(/^([\d.]+)\s*(.*)$/);
+            if (match) {
+              document.getElementById('detectVolumeValue').value = match[1];
+              if (match[2]) document.getElementById('detectVolumeUnit').value = match[2];
+            }
+          }
           document.getElementById('detectCostPrice').value = item.costPrice || '';
           document.getElementById('detectSuggestedPrice').value = item.suggestedPrice || '';
           document.getElementById('detectExpDate').value = item.expDate || '';
@@ -1031,12 +1166,14 @@
       }
     }
 
-    // 💾 บันทึกข้อมูลแบบป้องกันการบันทึกทับ LOT เดิม
     async function handleDetectSave(e) {
       e.preventDefault();
       
       const brand = document.getElementById('detectBrand').value.trim();
-      const volume = document.getElementById('detectVolume').value.trim();
+      const volVal = document.getElementById('detectVolumeValue').value.trim();
+      const volUnit = document.getElementById('detectVolumeUnit').value;
+      const combinedVolume = `${volVal} ${volUnit}`.trim();
+
       const qty = Number(document.getElementById('detectQty').value) || 1;
       const actionType = document.getElementById('detectActionType').value;
       const selectedStockId = document.getElementById('detectStockSelect').value;
@@ -1063,7 +1200,7 @@
               action: 'edit',
               rowIndex: targetItem.rowIndex,
               brand: brand || targetItem.brand,
-              volume: volume || targetItem.volume,
+              volume: combinedVolume || targetItem.volume,
               totalQty: newTotal,
               remainingQty: newRemaining,
               costPrice: costPrice || targetItem.costPrice,
@@ -1074,11 +1211,11 @@
             });
           }
         } else {
-          // บังคับส่ง action: 'add' สั่งสร้างเรคคอร์ดก้อนใหม่ (ไม่ทับ LOT เก่าเด็ดขาด)
+          // บังคับส่ง action: 'add' สั่งสร้าง Record ใหม่ใน MongoDB (ไม่ทับ LOT เก่า)
           await sendApiRequest({
             action: 'add',
             brand: brand,
-            volume: volume,
+            volume: combinedVolume,
             unit: 'ถุง',
             totalQty: qty,
             costPrice: costPrice,
@@ -1090,7 +1227,7 @@
         }
       } else {
         // ตัดสต็อก (-)
-        const existingItem = allProducts.find(p => p.brand.toLowerCase() === brand.toLowerCase() && p.volume === volume);
+        const existingItem = allProducts.find(p => p.brand.toLowerCase() === brand.toLowerCase() && p.volume === combinedVolume);
         if (existingItem) {
           const newQty = Math.max(0, existingItem.remainingQty - qty);
           await sendApiRequest({
@@ -1172,12 +1309,15 @@
         }
       }
 
+      const volVal = document.getElementById('volumeValue').value.trim();
+      const volUnit = document.getElementById('volumeUnit').value;
+
       const payload = {
         action: action,
         rowIndex: document.getElementById('formRowIndex').value,
         brand: document.getElementById('brand').value,
-        volume: document.getElementById('volume').value,
-        unit: document.getElementById('unit').value || 'ถุง',
+        volume: `${volVal} ${volUnit}`.trim(),
+        unit: 'ถุง',
         totalQty: Number(document.getElementById('totalQty').value) || 0,
         costPrice: Number(document.getElementById('costPrice').value) || 0,
         suggestedPrice: Number(document.getElementById('suggestedPrice').value) || 0,
@@ -1263,8 +1403,17 @@
         document.getElementById('remainingGroup').style.display = 'block';
 
         document.getElementById('brand').value = item.brand || '';
-        document.getElementById('volume').value = item.volume || '';
-        document.getElementById('unit').value = item.unit || 'ถุง';
+        
+        if (item.volume) {
+          const match = item.volume.match(/^([\d.]+)\s*(.*)$/);
+          if (match) {
+            document.getElementById('volumeValue').value = match[1];
+            if (match[2]) document.getElementById('volumeUnit').value = match[2];
+          } else {
+            document.getElementById('volumeValue').value = item.volume;
+          }
+        }
+
         document.getElementById('totalQty').value = item.totalQty || 0;
         document.getElementById('remainingQty').value = item.remainingQty !== undefined ? item.remainingQty : item.totalQty;
         document.getElementById('costPrice').value = item.costPrice || '';
