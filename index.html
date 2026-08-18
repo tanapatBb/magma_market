@@ -38,7 +38,7 @@
       padding-bottom: 40px;
     }
 
-    /* 📌 Header Navbar - นำปุ่ม Detect ไว้หัวสุด */
+    /* 📌 Header Navbar */
     .navbar {
       background: linear-gradient(135deg, #ff5722, #ff7043);
       color: white;
@@ -78,7 +78,6 @@
       .nav-btns { width: auto; }
     }
 
-    /* 🎯 ปุ่ม Detect ซองอาหารหลักบนหัวเว็บ */
     .btn-detect-main {
       background: #2e7d32;
       color: white;
@@ -112,11 +111,47 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
+    /* 📑 Navigation Tabs */
+    .tab-bar {
+      display: flex;
+      background: white;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #e0e0e0;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      background: none;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
     /* 📦 Main Container */
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px 15px;
+      padding: 0 15px;
+    }
+
+    .view-section {
+      display: none;
+    }
+
+    .view-section.active {
+      display: block;
     }
 
     /* 🔍 Search Bar */
@@ -170,6 +205,13 @@
       box-shadow: var(--shadow);
       display: flex;
       gap: 15px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
     }
 
     .product-img {
@@ -209,7 +251,6 @@
       color: #c62828;
     }
 
-    /* Buttons */
     .card-actions {
       display: flex;
       gap: 6px;
@@ -228,6 +269,64 @@
     .btn-deduct { background-color: #e3f2fd; color: #1565c0; }
     .btn-edit { background-color: #fff3e0; color: #ef6c00; }
     .btn-delete { background-color: #ffebee; color: #c62828; }
+
+    /* 📊 Dashboard Summary Cards */
+    .dashboard-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 18px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .stat-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .stat-info h4 { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+    .stat-info div { font-size: 1.4rem; font-weight: 600; color: var(--text); }
+
+    /* Dashboard Table */
+    .dashboard-table-box {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+
+    .dash-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .dash-table th, .dash-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .dash-table th {
+      background: #fafafa;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
 
     /* Modals */
     .modal {
@@ -319,11 +418,22 @@
       font-weight: 600;
       cursor: pointer;
     }
+
+    .lot-item-box {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #eee;
+    }
   </style>
 </head>
 <body>
 
-  <!-- 📌 Header Navbar: สแกน Detect ซองอาหารอยู่หัวสุด -->
+  <!-- 📌 Header Navbar -->
   <div class="navbar">
     <h1><i class="fa-solid fa-bone"></i> Magma Market</h1>
     <div class="nav-btns">
@@ -336,21 +446,85 @@
     </div>
   </div>
 
+  <!-- 📑 Navigation Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('products')">
+      <i class="fa-solid fa-boxes-stacked"></i> รายการสินค้า
+    </button>
+    <button class="tab-btn" onclick="switchTab('dashboard')">
+      <i class="fa-solid fa-chart-pie"></i> Dashboard สรุปยอด
+    </button>
+  </div>
+
   <div class="container">
-    <!-- Search Bar -->
-    <div class="controls">
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อซองอาหาร, ยี่ห้อ, ขนาด..." oninput="filterProducts()">
+    
+    <!-- 📦 VIEW 1: รายการสินค้า -->
+    <div id="productsView" class="view-section active">
+      <div class="controls">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อซองอาหาร, ยี่ห้อ, ขนาด..." oninput="filterProducts()">
+        </div>
+      </div>
+
+      <div id="productGrid" class="product-grid"></div>
+
+      <div id="statusMsg" style="text-align: center; padding: 40px; color: #888;">
+        <p>กำลังโหลดรายการสินค้า...</p>
       </div>
     </div>
 
-    <!-- Product Grid -->
-    <div id="productGrid" class="product-grid"></div>
+    <!-- 📊 VIEW 2: Dashboard -->
+    <div id="dashboardView" class="view-section">
+      <div class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e8f5e9; color:#2e7d32;">
+            <i class="fa-solid fa-cubes"></i>
+          </div>
+          <div class="stat-info">
+            <h4>สินค้าคงเหลือรวม</h4>
+            <div id="dashTotalRemaining">0</div>
+          </div>
+        </div>
 
-    <div id="statusMsg" class="status-msg" style="text-align: center; padding: 40px; color: #888;">
-      <p>กำลังโหลดรายการสินค้า...</p>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ffebee; color:#c62828;">
+            <i class="fa-solid fa-dolly"></i>
+          </div>
+          <div class="stat-info">
+            <h4>จำนวนที่ตัดออกไป (ขาย/เบิก)</h4>
+            <div id="dashTotalDeducted">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#e3f2fd; color:#1565c0;">
+            <i class="fa-solid fa-sack-dollar"></i>
+          </div>
+          <div class="stat-info">
+            <h4>มูลค่าสต็อกคงเหลือ</h4>
+            <div id="dashTotalValue">฿0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-table-box">
+        <h3 style="margin-bottom: 12px; font-size: 1.05rem;">📋 ตารางสรุปสต็อกและการตัดสินค้า</h3>
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>ชื่อสินค้า/ยี่ห้อ</th>
+              <th>จำนวน LOT</th>
+              <th>นำเข้าทั้งหมด</th>
+              <th>ตัดออกไปแล้ว</th>
+              <th>คงเหลือปัจจุบัน</th>
+            </tr>
+          </thead>
+          <tbody id="dashTableBody"></tbody>
+        </table>
+      </div>
     </div>
+
   </div>
 
   <!-- 🪟 Modal 1: กล้อง Detect ซองอาหาร -->
@@ -375,7 +549,7 @@
     </div>
   </div>
 
-  <!-- 🪟 Modal 2: หลัง Detect เจอ ให้ระบุขนาด + บันทึก -->
+  <!-- 🪟 Modal 2: หลัง Detect เจอ ให้ระบุขนาด/เลือกสต็อก + บันทึก -->
   <div id="detectedResultModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -388,11 +562,25 @@
       </div>
 
       <form onsubmit="handleDetectSave(event)">
-        <input type="hidden" id="detectRowIndex">
-        
         <div class="form-group">
           <label>ชื่อสินค้า / ยี่ห้อซองอาหาร *</label>
-          <input type="text" id="detectBrand" class="form-control" required placeholder="เช่น อาหารแมว SmartHeart">
+          <input type="text" id="detectBrand" class="form-control" required placeholder="เช่น อาหารแมว SmartHeart" oninput="updateStockDropdownOptions()">
+        </div>
+
+        <div class="form-group">
+          <label>การกระทำ *</label>
+          <select id="detectActionType" class="form-control" onchange="toggleStockSelectView()">
+            <option value="deduct">ตัดออกจากสต็อก (-)</option>
+            <option value="addQty">เพิ่มเข้าสต็อก (+)</option>
+          </select>
+        </div>
+
+        <!-- 📦 ช่องเลือกรายการสต็อกเดิมที่จะเพิ่มเข้า (แสดงเฉพาะตอนเลือกเพิ่มเข้าสต็อก) -->
+        <div class="form-group" id="stockSelectGroup" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 8px;">
+          <label style="color:#2e7d32; font-weight:600;">เลือกรายการสต็อกที่จะเพิ่มเข้า *</label>
+          <select id="detectStockSelect" class="form-control" onchange="onStockSelectChange()">
+            <option value="new">+ สร้างรายการ/ขนาดใหม่</option>
+          </select>
         </div>
 
         <div class="form-group">
@@ -400,18 +588,9 @@
           <input type="text" id="detectVolume" class="form-control" required placeholder="เช่น 1kg">
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>จำนวนที่ต้องการเพิ่ม/ตัดสต็อก</label>
-            <input type="number" id="detectQty" class="form-control" value="1" min="1">
-          </div>
-          <div class="form-group">
-            <label>การกระทำ</label>
-            <select id="detectActionType" class="form-control">
-              <option value="deduct">ตัดออกจากสต็อก (-)</option>
-              <option value="addQty">เพิ่มเข้าสต็อก (+)</option>
-            </select>
-          </div>
+        <div class="form-group">
+          <label>จำนวน (ถุง/ชิ้น) *</label>
+          <input type="number" id="detectQty" class="form-control" value="1" min="1" required>
         </div>
 
         <button type="submit" id="btnDetectSubmit" class="btn-submit">บันทึกข้อมูลซองอาหาร</button>
@@ -419,7 +598,19 @@
     </div>
   </div>
 
-  <!-- 🪟 Modal 3: นำสินค้าเข้าระบบ (ฟอร์มเต็ม) -->
+  <!-- 🪟 Modal 3: ดูรายละเอียดจากการกด Card -->
+  <div id="cardDetailModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="cardDetailTitle">รายละเอียดสินค้า</h3>
+        <i class="fa-solid fa-xmark" onclick="closeCardDetailModal()" style="cursor:pointer;"></i>
+      </div>
+
+      <div id="cardDetailContent"></div>
+    </div>
+  </div>
+
+  <!-- 🪟 Modal 4: นำสินค้าเข้าระบบ (ฟอร์มเต็ม) -->
   <div id="productModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -501,53 +692,169 @@
     const IMGBB_API_KEY = 'd6088edb9697a26a2e94f3ba26801487';
     
     let allProducts = [];
+    let groupedProducts = {};
     let mediaStream = null;
     let detectedUploadedUrl = '';
 
     document.addEventListener('DOMContentLoaded', loadProducts);
 
+    // 🔄 โหลดข้อมูล
     async function loadProducts() {
       try {
         const res = await fetch(API_URL);
         allProducts = await res.json();
-        renderGrid(allProducts);
+        groupProductsByBrand();
+        renderGrid();
+        renderDashboard();
       } catch (err) {
         document.getElementById('statusMsg').innerHTML = '<p style="color:red;">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</p>';
       }
     }
 
-    function renderGrid(products) {
+    // 📦 รวมสินค้าที่แบรนด์เดียวกันเป็น Group เดียวกัน
+    function groupProductsByBrand() {
+      groupedProducts = {};
+      allProducts.forEach(p => {
+        const brandKey = (p.brand || 'ไม่ระบุแบรนด์').trim();
+        if (!groupedProducts[brandKey]) {
+          groupedProducts[brandKey] = [];
+        }
+        groupedProducts[brandKey].push(p);
+      });
+    }
+
+    // 🃏 วาด Card สินค้าบนหน้าเว็บ
+    function renderGrid() {
       const grid = document.getElementById('productGrid');
       document.getElementById('statusMsg').style.display = 'none';
       
-      if (!products || products.length === 0) {
+      const brands = Object.keys(groupedProducts);
+      if (brands.length === 0) {
         grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">ไม่พบรายการสินค้า</p>';
         return;
       }
 
-      grid.innerHTML = products.map(p => `
-        <div class="product-card">
-          <img src="${p.imageUrl || 'https://via.placeholder.com/150?text=No+Image'}" class="product-img" onerror="this.src='https://via.placeholder.com/150?text=Error';">
-          <div class="product-details">
-            <div>
-              <div class="product-brand">${p.brand} ${p.volume ? `(${p.volume})` : ''}</div>
-              <span class="badge-qty ${p.remainingQty <= 5 ? 'low' : ''}">
-                เหลือ ${p.remainingQty} ${p.unit}
-              </span>
-              ${p.suggestedPrice ? `<div style="font-size:0.9rem; margin-top:4px;">฿${p.suggestedPrice}</div>` : ''}
-            </div>
+      grid.innerHTML = brands.map(brandName => {
+        const items = groupedProducts[brandName];
+        const totalLots = items.length;
+        const totalRemaining = items.reduce((sum, item) => sum + (item.remainingQty || 0), 0);
+        const firstItem = items[0];
+        const unit = firstItem.unit || 'ถุง';
 
-            <div class="card-actions">
-              <button class="btn-act btn-deduct" onclick="handleDeduct('${p.rowIndex}', '${p.brand}')">-1</button>
-              <button class="btn-act btn-edit" onclick="openModal('edit', '${p.rowIndex}')">แก้ไข</button>
-              <button class="btn-act btn-delete" onclick="handleDelete('${p.rowIndex}', '${p.brand}')">ลบ</button>
+        return `
+          <div class="product-card" onclick="openCardDetailModal('${brandName.replace(/'/g, "\\'")}')">
+            <img src="${firstItem.imageUrl || 'https://via.placeholder.com/150?text=No+Image'}" class="product-img" onerror="this.src='https://via.placeholder.com/150?text=Error';">
+            <div class="product-details">
+              <div>
+                <div class="product-brand">${brandName} (${totalLots} LOT)</div>
+                <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">
+                  ขนาดที่มี: ${items.map(i => i.volume || 'ทั่วไป').join(', ')}
+                </div>
+                <span class="badge-qty ${totalRemaining <= 5 ? 'low' : ''}" style="margin-top:6px;">
+                  คงเหลือรวม ${totalRemaining} ${unit}
+                </span>
+              </div>
+
+              <div class="card-actions" onclick="event.stopPropagation()">
+                <button class="btn-act btn-deduct" onclick="handleDeduct('${firstItem.rowIndex}', '${brandName}')">-1</button>
+                <button class="btn-act btn-edit" onclick="openModal('edit', '${firstItem.rowIndex}')">แก้ไข</button>
+                <button class="btn-act btn-delete" onclick="handleDelete('${firstItem.rowIndex}', '${brandName}')">ลบ</button>
+              </div>
             </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 📊 วาด Dashboard สรุปยอด
+    function renderDashboard() {
+      let totalRemaining = 0;
+      let totalDeducted = 0;
+      let totalValue = 0;
+
+      allProducts.forEach(p => {
+        const remaining = p.remainingQty || 0;
+        const total = p.totalQty || 0;
+        const deducted = Math.max(0, total - remaining);
+        const price = p.suggestedPrice || p.costPrice || 0;
+
+        totalRemaining += remaining;
+        totalDeducted += deducted;
+        totalValue += (remaining * price);
+      });
+
+      document.getElementById('dashTotalRemaining').innerText = totalRemaining.toLocaleString() + ' ชิ้น';
+      document.getElementById('dashTotalDeducted').innerText = totalDeducted.toLocaleString() + ' ชิ้น';
+      document.getElementById('dashTotalValue').innerText = '฿' + totalValue.toLocaleString();
+
+      const tbody = document.getElementById('dashTableBody');
+      const brands = Object.keys(groupedProducts);
+
+      tbody.innerHTML = brands.map(b => {
+        const items = groupedProducts[b];
+        const totalLots = items.length;
+        const totalIn = items.reduce((s, i) => s + (i.totalQty || 0), 0);
+        const totalRem = items.reduce((s, i) => s + (i.remainingQty || 0), 0);
+        const totalDed = Math.max(0, totalIn - totalRem);
+
+        return `
+          <tr>
+            <td><b>${b}</b></td>
+            <td>${totalLots} LOT</td>
+            <td>${totalIn}</td>
+            <td style="color:#c62828;">-${totalDed}</td>
+            <td style="color:#2e7d32;"><b>${totalRem}</b></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 🔍 สลับ Tab สินค้า / Dashboard
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+
+      if (tabName === 'products') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('productsView').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('dashboardView').classList.add('active');
+      }
+    }
+
+    // 🔍 เปิด Modal แสดงรายละเอียดสินค้าเมื่อกด Card
+    function openCardDetailModal(brandName) {
+      const items = groupedProducts[brandName];
+      if (!items) return;
+
+      document.getElementById('cardDetailTitle').innerText = `${brandName} (รวม ${items.length} LOT)`;
+      
+      const content = items.map(item => `
+        <div class="lot-item-box">
+          <div>
+            <div><b>ขนาด: ${item.volume || 'ไม่ได้ระบุ'}</b></div>
+            <div style="font-size: 0.8rem; color: #666;">
+              คงเหลือ: <b style="color:#2e7d32;">${item.remainingQty}</b> / ${item.totalQty} ${item.unit || 'ถุง'}
+              ${item.expDate ? ` | หมดอายุ: ${item.expDate}` : ''}
+            </div>
+          </div>
+          <div style="display:flex; gap:4px;">
+            <button class="btn-act btn-deduct" onclick="handleDeduct('${item.rowIndex}', '${brandName}')">-1</button>
+            <button class="btn-act btn-edit" onclick="closeCardDetailModal(); openModal('edit', '${item.rowIndex}')">แก้ไข</button>
           </div>
         </div>
       `).join('');
+
+      document.getElementById('cardDetailContent').innerHTML = content;
+      document.getElementById('cardDetailModal').style.display = 'flex';
     }
 
-    // 📸 1. เปิดกล้อง Detect ซองอาหาร
+    function closeCardDetailModal() {
+      document.getElementById('cardDetailModal').style.display = 'none';
+    }
+
+    // 📸 เปิดกล้อง Detect ซองอาหาร
     async function openCameraDetect() {
       document.getElementById('cameraModal').style.display = 'flex';
       const video = document.getElementById('videoElement');
@@ -569,7 +876,7 @@
       document.getElementById('cameraModal').style.display = 'none';
     }
 
-    // 📸 2. ถ่ายรูปซองอาหาร -> อัปโหลดขึ้น ImgBB -> เปิดหน้าระบุขนาด
+    // 📸 ถ่ายรูปซองอาหาร -> เปิดหน้าระบุขนาด/เลือกสต็อก
     async function captureBagImage() {
       const video = document.getElementById('videoElement');
       const canvas = document.getElementById('canvasElement');
@@ -589,10 +896,12 @@
           detectedUploadedUrl = await uploadToImgBB(file);
           closeCameraDetect();
           
-          // แสดงป๊อปอัปให้ใส่ขนาดและบันทึก
           document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
           document.getElementById('detectBrand').value = '';
           document.getElementById('detectVolume').value = '';
+          document.getElementById('detectActionType').value = 'deduct';
+          
+          toggleStockSelectView();
           document.getElementById('detectedResultModal').style.display = 'flex';
         } catch (err) {
           alert('อัปโหลดรูปภาพตรวจจับไม่สำเร็จ');
@@ -603,43 +912,107 @@
       }, 'image/jpeg');
     }
 
-    // 💾 3. บันทึกข้อมูลจากการ Detect ซองอาหาร
+    // 🔄 สลับมุมมองช่องเลือกรายการสต็อกเดิม (เมื่อเลือก เพิ่มเข้าสต็อก)
+    function toggleStockSelectView() {
+      const actionType = document.getElementById('detectActionType').value;
+      const stockGroup = document.getElementById('stockSelectGroup');
+      
+      if (actionType === 'addQty') {
+        stockGroup.style.display = 'block';
+        updateStockDropdownOptions();
+      } else {
+        stockGroup.style.display = 'none';
+      }
+    }
+
+    // 📋 ดึงรายการสต็อกเดิมของสินค้านั้นๆ มาใส่ใน Dropdown
+    function updateStockDropdownOptions() {
+      const brand = document.getElementById('detectBrand').value.trim().toLowerCase();
+      const select = document.getElementById('detectStockSelect');
+      
+      select.innerHTML = '<option value="new">+ สร้างรายการ/ขนาดใหม่</option>';
+
+      if (!brand) return;
+
+      const matchedItems = allProducts.filter(p => (p.brand || '').toLowerCase().includes(brand));
+      
+      matchedItems.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.rowIndex;
+        opt.innerText = `ขนาด: ${item.volume || 'ไม่ระบุ'} (คงเหลือเดิม: ${item.remainingQty} ${item.unit || 'ถุง'})`;
+        select.appendChild(opt);
+      });
+    }
+
+    // 🎯 เมื่อเลือกรายการสต็อกใน Dropdown ให้ดึงขนาดมาเติมอัตโนมัติ
+    function onStockSelectChange() {
+      const selectedId = document.getElementById('detectStockSelect').value;
+      if (selectedId !== 'new') {
+        const item = allProducts.find(p => p.rowIndex === selectedId);
+        if (item) {
+          document.getElementById('detectVolume').value = item.volume || '';
+        }
+      }
+    }
+
+    // 💾 บันทึกข้อมูลจากการ Detect ซองอาหาร
     async function handleDetectSave(e) {
       e.preventDefault();
       
-      const brand = document.getElementById('detectBrand').value;
-      const volume = document.getElementById('detectVolume').value;
+      const brand = document.getElementById('detectBrand').value.trim();
+      const volume = document.getElementById('detectVolume').value.trim();
       const qty = Number(document.getElementById('detectQty').value) || 1;
       const actionType = document.getElementById('detectActionType').value;
+      const selectedStockId = document.getElementById('detectStockSelect').value;
 
-      // ค้นหาว่ามีสินค้านี้ในระบบแล้วหรือยัง (ตามชื่อและขนาด)
-      const existingItem = allProducts.find(p => p.brand.toLowerCase() === brand.toLowerCase() && p.volume === volume);
+      if (actionType === 'addQty') {
+        // กรณีเลือกเพิ่มเข้าสต็อก
+        if (selectedStockId !== 'new') {
+          // เพิ่มเข้าในรายการสต็อกเดิมที่เลือก
+          const targetItem = allProducts.find(p => p.rowIndex === selectedStockId);
+          if (targetItem) {
+            const newTotal = (targetItem.totalQty || 0) + qty;
+            const newRemaining = (targetItem.remainingQty || 0) + qty;
 
-      if (existingItem) {
-        // มีสินค้าเดิม -> ตัดสต็อก หรือ เพิ่มสต็อก
-        const newQty = actionType === 'deduct' 
-          ? Math.max(0, existingItem.remainingQty - qty)
-          : existingItem.remainingQty + qty;
-
-        await sendApiRequest({
-          action: 'edit',
-          rowIndex: existingItem.rowIndex,
-          brand: existingItem.brand,
-          volume: existingItem.volume,
-          remainingQty: newQty,
-          totalQty: existingItem.totalQty,
-          unit: existingItem.unit
-        });
+            await sendApiRequest({
+              action: 'edit',
+              rowIndex: targetItem.rowIndex,
+              brand: targetItem.brand,
+              volume: volume || targetItem.volume,
+              totalQty: newTotal,
+              remainingQty: newRemaining,
+              unit: targetItem.unit
+            });
+          }
+        } else {
+          // เพิ่มเป็นสินค้า/ขนาดรายการใหม่
+          await sendApiRequest({
+            action: 'add',
+            brand: brand,
+            volume: volume,
+            unit: 'ถุง',
+            totalQty: qty,
+            imageUrl: detectedUploadedUrl
+          });
+        }
       } else {
-        // เป็นสินค้าใหม่ -> เพิ่มเข้าระบบให้อัตโนมัติ
-        await sendApiRequest({
-          action: 'add',
-          brand: brand,
-          volume: volume,
-          unit: 'ถุง',
-          totalQty: qty,
-          imageUrl: detectedUploadedUrl
-        });
+        // กรณีเลือกตัดสต็อก (-)
+        const existingItem = allProducts.find(p => p.brand.toLowerCase() === brand.toLowerCase() && p.volume === volume);
+        if (existingItem) {
+          const newQty = Math.max(0, existingItem.remainingQty - qty);
+          await sendApiRequest({
+            action: 'edit',
+            rowIndex: existingItem.rowIndex,
+            brand: existingItem.brand,
+            volume: existingItem.volume,
+            remainingQty: newQty,
+            totalQty: existingItem.totalQty,
+            unit: existingItem.unit
+          });
+        } else {
+          alert('ไม่พบรายการสินค้าและขนาดที่ระบุเพื่อทำการตัดสต็อก');
+          return;
+        }
       }
 
       closeDetectResultModal();
@@ -736,8 +1109,50 @@
 
     function filterProducts() {
       const kw = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allProducts.filter(p => p.brand && p.brand.toLowerCase().includes(kw));
-      renderGrid(filtered);
+      const filtered = {};
+      Object.keys(groupedProducts).forEach(b => {
+        if (b.toLowerCase().includes(kw)) {
+          filtered[b] = groupedProducts[b];
+        }
+      });
+      
+      const grid = document.getElementById('productGrid');
+      const brands = Object.keys(filtered);
+      
+      if (brands.length === 0) {
+        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">ไม่พบรายการสินค้า</p>';
+        return;
+      }
+
+      grid.innerHTML = brands.map(brandName => {
+        const items = filtered[brandName];
+        const totalLots = items.length;
+        const totalRemaining = items.reduce((sum, item) => sum + (item.remainingQty || 0), 0);
+        const firstItem = items[0];
+
+        return `
+          <div class="product-card" onclick="openCardDetailModal('${brandName.replace(/'/g, "\\'")}')">
+            <img src="${firstItem.imageUrl || 'https://via.placeholder.com/150?text=No+Image'}" class="product-img">
+            <div class="product-details">
+              <div>
+                <div class="product-brand">${brandName} (${totalLots} LOT)</div>
+                <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">
+                  ขนาดที่มี: ${items.map(i => i.volume || 'ทั่วไป').join(', ')}
+                </div>
+                <span class="badge-qty ${totalRemaining <= 5 ? 'low' : ''}" style="margin-top:6px;">
+                  คงเหลือรวม ${totalRemaining} ${firstItem.unit || 'ถุง'}
+                </span>
+              </div>
+
+              <div class="card-actions" onclick="event.stopPropagation()">
+                <button class="btn-act btn-deduct" onclick="handleDeduct('${firstItem.rowIndex}', '${brandName}')">-1</button>
+                <button class="btn-act btn-edit" onclick="openModal('edit', '${firstItem.rowIndex}')">แก้ไข</button>
+                <button class="btn-act btn-delete" onclick="handleDelete('${firstItem.rowIndex}', '${brandName}')">ลบ</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     function openModal(mode, id = null) {
