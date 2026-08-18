@@ -549,7 +549,7 @@
     </div>
   </div>
 
-  <!-- 🪟 Modal 2: ป๊อปอัปจัดการข้อมูลหลัง Detect (ปรับปรุงใหม่ บันทึกครบในหน้าเดียว) -->
+  <!-- 🪟 Modal 2: ป๊อปอัปจัดการข้อมูลหลัง Detect -->
   <div id="detectedResultModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -562,28 +562,30 @@
       </div>
 
       <form id="detectForm" onsubmit="handleDetectSave(event)">
-        <!-- เลือกจับคู่กับสินค้าเดิมในระบบ -->
+        <!-- 🔍 ดรอปดาวน์เลือกสินค้าเดิมที่มีในระบบ -->
         <div class="form-group" style="background:#f0f4f8; padding:10px; border-radius:8px;">
-          <label style="font-weight:600; color:#1565c0;">🔍 เลือกรายการสินค้าเดิมที่มีในระบบ (ถ้ามี):</label>
+          <label style="font-weight:600; color:#1565c0;">🔍 เลือกรายการสินค้าเดิมในระบบ (ถ้ามี):</label>
           <select id="existingProductSelect" class="form-control" onchange="onExistingProductSelected()">
-            <option value="">-- สินค้าใหม่ (ไม่มีในระบบ) --</option>
+            <option value="">-- สร้างสินค้าใหม่ (ไม่มีในระบบ) --</option>
           </select>
         </div>
 
         <div class="form-group">
           <label>ชื่อสินค้า / ยี่ห้อซองอาหาร *</label>
-          <input type="text" id="detectBrand" class="form-control" required placeholder="พิมพ์ยี่ห้อซองอาหาร เช่น SmartHeart">
+          <input type="text" id="detectBrand" class="form-control" required placeholder="พิมพ์ยี่ห้อซองอาหาร..." oninput="updateStockDropdownOptions()">
         </div>
 
+        <!-- 🛑 การกระทำบังคับเลือกเป็นค่าว่างเริ่มต้น -->
         <div class="form-group">
           <label>การกระทำ *</label>
-          <select id="detectActionType" class="form-control" onchange="toggleStockSelectView()">
+          <select id="detectActionType" class="form-control" required onchange="toggleStockSelectView()">
+            <option value="">-- กรุณาเลือกการกระทำ --</option>
             <option value="deduct">ตัดออกจากสต็อก (-)</option>
             <option value="addQty">เพิ่มเข้าสต็อก (+)</option>
           </select>
         </div>
 
-        <!-- ช่องเลือกรายการ LOT/สต็อกเดิมที่จะเพิ่มเข้า -->
+        <!-- 📦 ช่องเลือกรายการ LOT สต็อกเดิมที่มีอยู่จริง -->
         <div class="form-group" id="stockSelectGroup" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 8px;">
           <label style="color:#2e7d32; font-weight:600;">เลือก LOT เดิมที่จะเติมสต็อกเข้า *</label>
           <select id="detectStockSelect" class="form-control" onchange="onStockSelectChange()">
@@ -884,7 +886,6 @@
       document.getElementById('cardDetailModal').style.display = 'none';
     }
 
-    // 📸 เปิดกล้อง Detect
     async function openCameraDetect() {
       document.getElementById('cameraModal').style.display = 'flex';
       const video = document.getElementById('videoElement');
@@ -906,7 +907,6 @@
       document.getElementById('cameraModal').style.display = 'none';
     }
 
-    // 📸 ถ่ายรูปซองอาหาร
     async function captureBagImage() {
       const video = document.getElementById('videoElement');
       const canvas = document.getElementById('canvasElement');
@@ -928,8 +928,10 @@
           
           document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
           
-          // ล้างฟอร์มใหม่ทั้งหมด เพื่อไม่ให้ข้อความค้าง
+          // ล้างฟอร์มใหม่ + ตั้งค่าการกระทำเป็นค่าว่าง
           document.getElementById('detectForm').reset();
+          document.getElementById('detectActionType').value = "";
+          
           populateExistingProductsDropdown();
           toggleStockSelectView();
 
@@ -943,23 +945,34 @@
       }, 'image/jpeg');
     }
 
-    // 📋 เติมรายการสินค้าที่มีเดิมลง Dropdown ให้ผู้ใช้เลือกได้ง่ายขึ้น
     function populateExistingProductsDropdown() {
       const select = document.getElementById('existingProductSelect');
-      select.innerHTML = '<option value="">-- สินค้าใหม่ (ไม่มีในระบบ) --</option>';
+      select.innerHTML = '<option value="">-- สร้างสินค้าใหม่ (ไม่มีในระบบ) --</option>';
 
       allProducts.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.rowIndex;
-        opt.innerText = `${p.brand} (ขนาด: ${p.volume || 'ทั่วไป'} | เหลือ: ${p.remainingQty})`;
+        opt.innerText = `${p.brand} [ขนาด: ${p.volume || 'ทั่วไป'} | LOT: ${p.lotNo || '-'}]`;
         select.appendChild(opt);
       });
     }
 
-    // เมื่อกดเลือกสินค้าเดิมจาก Dropdown ให้ดึงข้อมูลมาเติมใส่อัตโนมัติ
+    // เมื่อเลือกสินค้าเดิม ล้างการกระทำเป็นค่าว่าง
     function onExistingProductSelected() {
       const selectedId = document.getElementById('existingProductSelect').value;
-      if (!selectedId) return;
+      
+      document.getElementById('detectActionType').value = "";
+      toggleStockSelectView();
+
+      if (!selectedId) {
+        document.getElementById('detectBrand').value = '';
+        document.getElementById('detectVolume').value = '';
+        document.getElementById('detectCostPrice').value = '';
+        document.getElementById('detectSuggestedPrice').value = '';
+        document.getElementById('detectExpDate').value = '';
+        document.getElementById('detectLotNo').value = '';
+        return;
+      }
 
       const item = allProducts.find(p => p.rowIndex === selectedId);
       if (item) {
@@ -985,6 +998,7 @@
       }
     }
 
+    // แสดงเฉพาะรายการที่มีจริง ตัดตัวหนังสือ (คงเหลือเดิม: ...) ออก
     function updateStockDropdownOptions() {
       const brand = document.getElementById('detectBrand').value.trim().toLowerCase();
       const select = document.getElementById('detectStockSelect');
@@ -998,7 +1012,7 @@
       matchedItems.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.rowIndex;
-        opt.innerText = `LOT: ${item.lotNo || 'ทั่วไป'} | ขนาด: ${item.volume || 'ไม่ระบุ'} (คงเหลือเดิม: ${item.remainingQty} ${item.unit || 'ถุง'})`;
+        opt.innerText = `LOT: ${item.lotNo || 'ทั่วไป'} | ขนาด: ${item.volume || 'ไม่ระบุ'}`;
         select.appendChild(opt);
       });
     }
@@ -1017,7 +1031,7 @@
       }
     }
 
-    // 💾 บันทึกข้อมูลซองอาหาร
+    // 💾 บันทึกข้อมูลแบบป้องกันการบันทึกทับ LOT เดิม
     async function handleDetectSave(e) {
       e.preventDefault();
       
@@ -1027,6 +1041,11 @@
       const actionType = document.getElementById('detectActionType').value;
       const selectedStockId = document.getElementById('detectStockSelect').value;
 
+      if (!actionType) {
+        alert('กรุณาเลือกการกระทำ (ตัดออกจากสต็อก หรือ เพิ่มเข้าสต็อก)');
+        return;
+      }
+
       const costPrice = Number(document.getElementById('detectCostPrice').value) || 0;
       const suggestedPrice = Number(document.getElementById('detectSuggestedPrice').value) || 0;
       const expDate = document.getElementById('detectExpDate').value;
@@ -1034,7 +1053,7 @@
 
       if (actionType === 'addQty') {
         if (selectedStockId !== 'new') {
-          // เติมเข้าสต็อกเดิม
+          // สั่งเติมจำนวนเข้าสต็อก LOT เดิม
           const targetItem = allProducts.find(p => p.rowIndex === selectedStockId);
           if (targetItem) {
             const newTotal = (targetItem.totalQty || 0) + qty;
@@ -1055,7 +1074,7 @@
             });
           }
         } else {
-          // สร้างเป็น LOT/สินค้าใหม่
+          // บังคับส่ง action: 'add' สั่งสร้างเรคคอร์ดก้อนใหม่ (ไม่ทับ LOT เก่าเด็ดขาด)
           await sendApiRequest({
             action: 'add',
             brand: brand,
