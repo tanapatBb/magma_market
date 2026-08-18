@@ -549,11 +549,11 @@
     </div>
   </div>
 
-  <!-- 🪟 Modal 2: หลัง Detect เจอ ให้ระบุขนาด/เลือกสต็อก + บันทึก -->
+  <!-- 🪟 Modal 2: ป๊อปอัปจัดการข้อมูลหลัง Detect (ปรับปรุงใหม่ บันทึกครบในหน้าเดียว) -->
   <div id="detectedResultModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="detectResultTitle">ผลการตรวจจับซองอาหาร</h3>
+        <h3 id="detectResultTitle">ผลการถ่ายภาพซองอาหาร</h3>
         <i class="fa-solid fa-xmark" onclick="closeDetectResultModal()" style="cursor:pointer;"></i>
       </div>
 
@@ -561,11 +561,18 @@
         <img id="detectedImgPreview" src="" style="width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd;">
       </div>
 
-      <form onsubmit="handleDetectSave(event)">
+      <form id="detectForm" onsubmit="handleDetectSave(event)">
+        <!-- เลือกจับคู่กับสินค้าเดิมในระบบ -->
+        <div class="form-group" style="background:#f0f4f8; padding:10px; border-radius:8px;">
+          <label style="font-weight:600; color:#1565c0;">🔍 เลือกรายการสินค้าเดิมที่มีในระบบ (ถ้ามี):</label>
+          <select id="existingProductSelect" class="form-control" onchange="onExistingProductSelected()">
+            <option value="">-- สินค้าใหม่ (ไม่มีในระบบ) --</option>
+          </select>
+        </div>
+
         <div class="form-group">
           <label>ชื่อสินค้า / ยี่ห้อซองอาหาร *</label>
-          <input type="text" id="detectBrand" class="form-control" required placeholder="พิมพ์หรือเลือกชื่อสินค้า..." oninput="onBrandInputChanged()" list="brandSuggestions">
-          <datalist id="brandSuggestions"></datalist>
+          <input type="text" id="detectBrand" class="form-control" required placeholder="พิมพ์ยี่ห้อซองอาหาร เช่น SmartHeart">
         </div>
 
         <div class="form-group">
@@ -576,35 +583,48 @@
           </select>
         </div>
 
-        <!-- 📦 ช่องเลือกรายการ LOT/สต็อกเดิมที่จะเพิ่มเข้า -->
+        <!-- ช่องเลือกรายการ LOT/สต็อกเดิมที่จะเพิ่มเข้า -->
         <div class="form-group" id="stockSelectGroup" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 8px;">
-          <label style="color:#2e7d32; font-weight:600;">เลือก LOT/สต็อกเดิมที่จะเพิ่มเข้า *</label>
+          <label style="color:#2e7d32; font-weight:600;">เลือก LOT เดิมที่จะเติมสต็อกเข้า *</label>
           <select id="detectStockSelect" class="form-control" onchange="onStockSelectChange()">
             <option value="new">+ สร้าง LOT / ขนาดใหม่</option>
           </select>
         </div>
 
-        <!-- 🏷️ Dropdown ตัวเลือกขนาดอาหารที่มีในระบบ -->
-        <div class="form-group">
-          <label>ขนาดอาหาร *</label>
-          <select id="detectVolumeSelect" class="form-control" onchange="onVolumeSelectChanged()">
-            <option value="">-- เลือกขนาดอาหาร --</option>
-            <option value="custom">+ กรอกขนาดใหม่...</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>ขนาดอาหาร (เช่น 1kg, 500g) *</label>
+            <input type="text" id="detectVolume" class="form-control" placeholder="เช่น 1kg" required>
+          </div>
+          <div class="form-group">
+            <label>จำนวน (ถุง/ชิ้น) *</label>
+            <input type="number" id="detectQty" class="form-control" value="1" min="1" required>
+          </div>
         </div>
 
-        <!-- ช่องพิมพ์ขนาดกรณีเลือกขนาดใหม่ -->
-        <div class="form-group" id="customVolumeGroup" style="display: none;">
-          <label>ระบุขนาดอาหารใหม่ *</label>
-          <input type="text" id="detectCustomVolume" class="form-control" placeholder="เช่น 500g, 1.2kg">
+        <div class="form-row">
+          <div class="form-group">
+            <label>ราคาต้นทุน (บาท)</label>
+            <input type="number" id="detectCostPrice" class="form-control" step="0.01" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>ราคาขาย (บาท)</label>
+            <input type="number" id="detectSuggestedPrice" class="form-control" step="0.01" placeholder="0.00">
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>จำนวน (ถุง/ชิ้น) *</label>
-          <input type="number" id="detectQty" class="form-control" value="1" min="1" required>
+        <div class="form-row">
+          <div class="form-group">
+            <label>วันหมดอายุ</label>
+            <input type="date" id="detectExpDate" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>เลข LOT สินค้า</label>
+            <input type="text" id="detectLotNo" class="form-control" placeholder="เช่น LOT-01">
+          </div>
         </div>
 
-        <button type="submit" id="btnDetectSubmit" class="btn-submit">บันทึกข้อมูลซองอาหาร</button>
+        <button type="submit" id="btnDetectSubmit" class="btn-submit">บันทึกข้อมูลเรียบร้อย</button>
       </form>
     </div>
   </div>
@@ -721,7 +741,6 @@
         groupProductsByBrand();
         renderGrid();
         renderDashboard();
-        updateBrandSuggestions();
       } catch (err) {
         document.getElementById('statusMsg').innerHTML = '<p style="color:red;">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</p>';
       }
@@ -736,12 +755,6 @@
         }
         groupedProducts[brandKey].push(p);
       });
-    }
-
-    function updateBrandSuggestions() {
-      const datalist = document.getElementById('brandSuggestions');
-      if (!datalist) return;
-      datalist.innerHTML = Object.keys(groupedProducts).map(b => `<option value="${b}">`).join('');
     }
 
     function renderGrid() {
@@ -900,7 +913,7 @@
       const btn = document.getElementById('captureBtn');
 
       btn.disabled = true;
-      btn.innerText = 'กำลังตรวจจับสินค้า...';
+      btn.innerText = 'กำลังประมวลผลรูปถ่าย...';
 
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
@@ -915,15 +928,14 @@
           
           document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
           
-          // เคลียร์ช่องพิมพ์ ให้ผู้ใช้พิมพ์ยี่ห้อใหม่เองได้ หรือกดเลือกจาก Auto-complete
-          document.getElementById('detectBrand').value = '';
-          document.getElementById('detectActionType').value = 'deduct';
-          
-          onBrandInputChanged();
+          // ล้างฟอร์มใหม่ทั้งหมด เพื่อไม่ให้ข้อความค้าง
+          document.getElementById('detectForm').reset();
+          populateExistingProductsDropdown();
           toggleStockSelectView();
+
           document.getElementById('detectedResultModal').style.display = 'flex';
         } catch (err) {
-          alert('อัปโหลดรูปภาพตรวจจับไม่สำเร็จ');
+          alert('อัปโหลดรูปภาพไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
         } finally {
           btn.disabled = false;
           btn.innerText = 'ถ่ายรูปตรวจจับ';
@@ -931,42 +943,33 @@
       }, 'image/jpeg');
     }
 
-    // 🔍 เมื่อพิมพ์/เลือกชื่อสินค้าในช่อง Detect
-    function onBrandInputChanged() {
-      const brandInput = document.getElementById('detectBrand').value.trim();
-      const volumeSelect = document.getElementById('detectVolumeSelect');
-      
-      volumeSelect.innerHTML = '<option value="">-- เลือกขนาดอาหาร --</option>';
+    // 📋 เติมรายการสินค้าที่มีเดิมลง Dropdown ให้ผู้ใช้เลือกได้ง่ายขึ้น
+    function populateExistingProductsDropdown() {
+      const select = document.getElementById('existingProductSelect');
+      select.innerHTML = '<option value="">-- สินค้าใหม่ (ไม่มีในระบบ) --</option>';
 
-      const matchedBrandKey = Object.keys(groupedProducts).find(b => b.toLowerCase() === brandInput.toLowerCase());
-
-      if (matchedBrandKey) {
-        const items = groupedProducts[matchedBrandKey];
-        items.forEach(item => {
-          const vol = item.volume || 'ทั่วไป';
-          const opt = document.createElement('option');
-          opt.value = vol;
-          opt.innerText = `${vol} (คงเหลือ: ${item.remainingQty} ${item.unit || 'ถุง'})`;
-          volumeSelect.appendChild(opt);
-        });
-      }
-
-      const customOpt = document.createElement('option');
-      customOpt.value = 'custom';
-      customOpt.innerText = '+ กรอกขนาดใหม่...';
-      volumeSelect.appendChild(customOpt);
-
-      updateStockDropdownOptions();
+      allProducts.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.rowIndex;
+        opt.innerText = `${p.brand} (ขนาด: ${p.volume || 'ทั่วไป'} | เหลือ: ${p.remainingQty})`;
+        select.appendChild(opt);
+      });
     }
 
-    function onVolumeSelectChanged() {
-      const val = document.getElementById('detectVolumeSelect').value;
-      const customGroup = document.getElementById('customVolumeGroup');
+    // เมื่อกดเลือกสินค้าเดิมจาก Dropdown ให้ดึงข้อมูลมาเติมใส่อัตโนมัติ
+    function onExistingProductSelected() {
+      const selectedId = document.getElementById('existingProductSelect').value;
+      if (!selectedId) return;
 
-      if (val === 'custom') {
-        customGroup.style.display = 'block';
-      } else {
-        customGroup.style.display = 'none';
+      const item = allProducts.find(p => p.rowIndex === selectedId);
+      if (item) {
+        document.getElementById('detectBrand').value = item.brand || '';
+        document.getElementById('detectVolume').value = item.volume || '';
+        document.getElementById('detectCostPrice').value = item.costPrice || '';
+        document.getElementById('detectSuggestedPrice').value = item.suggestedPrice || '';
+        document.getElementById('detectExpDate').value = item.expDate || '';
+        document.getElementById('detectLotNo').value = item.lotNo || '';
+        updateStockDropdownOptions();
       }
     }
 
@@ -982,7 +985,6 @@
       }
     }
 
-    // 📋 ดึงรายการ LOT เดิมของแบรนด์นี้มาให้เลือก
     function updateStockDropdownOptions() {
       const brand = document.getElementById('detectBrand').value.trim().toLowerCase();
       const select = document.getElementById('detectStockSelect');
@@ -1006,36 +1008,33 @@
       if (selectedId !== 'new') {
         const item = allProducts.find(p => p.rowIndex === selectedId);
         if (item) {
-          const volumeSelect = document.getElementById('detectVolumeSelect');
-          volumeSelect.value = item.volume || '';
-          onVolumeSelectChanged();
+          document.getElementById('detectVolume').value = item.volume || '';
+          document.getElementById('detectCostPrice').value = item.costPrice || '';
+          document.getElementById('detectSuggestedPrice').value = item.suggestedPrice || '';
+          document.getElementById('detectExpDate').value = item.expDate || '';
+          document.getElementById('detectLotNo').value = item.lotNo || '';
         }
       }
     }
 
-    // 💾 บันทึกการ Detect
+    // 💾 บันทึกข้อมูลซองอาหาร
     async function handleDetectSave(e) {
       e.preventDefault();
       
       const brand = document.getElementById('detectBrand').value.trim();
-      let volume = document.getElementById('detectVolumeSelect').value;
-
-      if (volume === 'custom') {
-        volume = document.getElementById('detectCustomVolume').value.trim();
-      }
-
-      if (!volume) {
-        alert('กรุณาเลือกหรือระบุขนาดอาหาร');
-        return;
-      }
-
+      const volume = document.getElementById('detectVolume').value.trim();
       const qty = Number(document.getElementById('detectQty').value) || 1;
       const actionType = document.getElementById('detectActionType').value;
       const selectedStockId = document.getElementById('detectStockSelect').value;
 
+      const costPrice = Number(document.getElementById('detectCostPrice').value) || 0;
+      const suggestedPrice = Number(document.getElementById('detectSuggestedPrice').value) || 0;
+      const expDate = document.getElementById('detectExpDate').value;
+      const lotNo = document.getElementById('detectLotNo').value;
+
       if (actionType === 'addQty') {
         if (selectedStockId !== 'new') {
-          // เพิ่มเข้าสต็อกเดิมที่เลือก
+          // เติมเข้าสต็อกเดิม
           const targetItem = allProducts.find(p => p.rowIndex === selectedStockId);
           if (targetItem) {
             const newTotal = (targetItem.totalQty || 0) + qty;
@@ -1044,21 +1043,29 @@
             await sendApiRequest({
               action: 'edit',
               rowIndex: targetItem.rowIndex,
-              brand: targetItem.brand,
+              brand: brand || targetItem.brand,
               volume: volume || targetItem.volume,
               totalQty: newTotal,
               remainingQty: newRemaining,
+              costPrice: costPrice || targetItem.costPrice,
+              suggestedPrice: suggestedPrice || targetItem.suggestedPrice,
+              expDate: expDate || targetItem.expDate,
+              lotNo: lotNo || targetItem.lotNo,
               unit: targetItem.unit
             });
           }
         } else {
-          // สร้าง LOT / สต็อกใหม่
+          // สร้างเป็น LOT/สินค้าใหม่
           await sendApiRequest({
             action: 'add',
             brand: brand,
             volume: volume,
             unit: 'ถุง',
             totalQty: qty,
+            costPrice: costPrice,
+            suggestedPrice: suggestedPrice,
+            expDate: expDate,
+            lotNo: lotNo,
             imageUrl: detectedUploadedUrl
           });
         }
