@@ -4,1274 +4,266 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Magma Market - ระบบจัดการสต็อกอาหารสัตว์</title>
-  
-  <!-- Google Fonts: Kanit -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
   <style>
-    :root {
-      --primary: #ff5722;
-      --primary-hover: #e64a19;
-      --bg: #f4f6f8;
-      --card-bg: #ffffff;
-      --text: #2c3e50;
-      --text-muted: #7f8c8d;
-      --border-radius: 12px;
-      --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Kanit', sans-serif;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      padding-bottom: 40px;
-    }
-
-    /* 📌 Header Navbar */
-    .navbar {
-      background: linear-gradient(135deg, #ff5722, #ff7043);
-      color: white;
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    @media (min-width: 640px) {
-      .navbar {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
-    }
-
-    .navbar h1 {
-      font-size: 1.2rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .nav-btns {
-      display: flex;
-      gap: 8px;
-      width: 100%;
-    }
-
-    @media (min-width: 640px) {
-      .nav-btns { width: auto; }
-    }
-
-    .btn-detect-main {
-      background: #2e7d32;
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      flex-grow: 1;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    .btn-add-main {
-      background: white;
-      color: var(--primary);
-      border: none;
-      padding: 10px 16px;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    /* 📑 Navigation Tabs */
-    .tab-bar {
-      display: flex;
-      background: white;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #e0e0e0;
-      box-shadow: var(--shadow);
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 12px;
-      text-align: center;
-      background: none;
-      border: none;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      text-decoration: none;
-      border-bottom: 3px solid transparent;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
-
-    /* 📦 Main Container */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 15px;
-    }
-
-    /* 🔍 Search Bar */
-    .controls {
-      margin-bottom: 20px;
-    }
-
-    .search-box {
-      position: relative;
-      width: 100%;
-    }
-
-    .search-box i {
-      position: absolute;
-      left: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-muted);
-    }
-
-    .search-input {
-      width: 100%;
-      padding: 12px 15px 12px 42px;
-      border: 1px solid #e0e0e0;
-      border-radius: var(--border-radius);
-      font-size: 0.95rem;
-      outline: none;
-      background: white;
-      box-shadow: var(--shadow);
-    }
-
-    /* 🃏 Card Grid */
-    .product-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-
-    @media (min-width: 640px) {
-      .product-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    @media (min-width: 1024px) {
-      .product-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-
-    .product-card {
-      background: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 15px;
-      box-shadow: var(--shadow);
-      display: flex;
-      gap: 15px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .product-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    }
-
-    .product-img {
-      width: 90px;
-      height: 90px;
-      border-radius: 8px;
-      object-fit: cover;
-      background-color: #f0f0f0;
-      flex-shrink: 0;
-    }
-
-    .product-details {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .product-brand {
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .badge-qty {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      background-color: #e8f5e9;
-      color: #2e7d32;
-    }
-
-    .badge-qty.low {
-      background-color: #ffebee;
-      color: #c62828;
-    }
-
-    .card-actions {
-      display: flex;
-      gap: 6px;
-      margin-top: 10px;
-    }
-
-    .btn-act {
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .btn-deduct { background-color: #e3f2fd; color: #1565c0; }
-    .btn-edit { background-color: #fff3e0; color: #ef6c00; }
-    .btn-delete { background-color: #ffebee; color: #c62828; }
-
-    /* Modals */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      z-index: 200;
-      justify-content: center;
-      align-items: flex-end;
-    }
-
-    @media (min-width: 640px) {
-      .modal { align-items: center; }
-    }
-
-    .modal-content {
-      background: white;
-      width: 100%;
-      max-width: 500px;
-      max-height: 90vh;
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-      padding: 20px;
-      overflow-y: auto;
-    }
-
-    @media (min-width: 640px) {
-      .modal-content { border-radius: var(--border-radius); }
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
-    }
-
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; }
-    .form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95rem; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    .btn-submit {
-      width: 100%;
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 15px;
-    }
-
-    /* Camera Detect UI */
-    .camera-box {
-      width: 100%;
-      background: #000;
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 15px;
-      position: relative;
-    }
-
-    #videoElement { width: 100%; max-height: 300px; object-fit: cover; }
+    * { box-sizing: border-box; font-family: 'Kanit', sans-serif, Tahoma; }
+    body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
     
-    .detect-overlay {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      border: 2px dashed #00ff66;
-      width: 70%; height: 75%;
-      border-radius: 12px;
-      pointer-events: none;
-    }
+    .card-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    h2 { margin-top: 0; color: #34495e; font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+    
+    /* Form & Inputs */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    
+    /* Buttons */
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .btn-primary { background: #3498db; color: white; width: 100%; }
+    .btn-primary:hover { background: #2980b9; }
+    .btn-scan { background: #8e44ad; color: white; margin-top: 10px; width: 100%; }
+    .btn-scan:hover { background: #7d3c98; }
+    .btn-delete { background: #e74c3c; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-delete:hover { background: #c0392b; }
 
-    .btn-capture {
-      width: 100%;
-      background: #2e7d32;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    /* AI Scanner Area */
+    .scan-section { text-align: center; border: 2px dashed #8e44ad; padding: 20px; border-radius: 8px; background: #fdfafd; }
+    #scanStatus { margin-top: 10px; font-weight: bold; color: #8e44ad; }
 
-    .lot-item-box {
-      background: #f8f9fa;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: 1px solid #eee;
-    }
-
-    /* 🏷️ Quick Option Buttons */
-    .quick-btn-group {
-      display: flex;
-      gap: 6px;
-      margin-top: 6px;
-      flex-wrap: wrap;
-    }
-
-    .btn-quick {
-      background: #f0f0f0;
-      border: 1px solid #ccc;
-      padding: 4px 10px;
-      border-radius: 15px;
-      font-size: 0.78rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-quick:hover {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
+    /* Product List Grid */
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; margin-top: 15px; }
+    .product-card { background: white; border: 1px solid #e1e8ed; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
+    .product-card h3 { margin: 0 0 10px 0; color: #2c3e50; font-size: 1.1rem; }
+    .product-info p { margin: 4px 0; font-size: 0.9rem; color: #555; }
+    .empty-state { text-align: center; padding: 30px; color: #888; font-size: 1.1rem; grid-column: 1 / -1; }
   </style>
 </head>
 <body>
 
-  <!-- 📌 Header Navbar -->
-  <div class="navbar">
-    <h1><i class="fa-solid fa-bone"></i> Magma Market</h1>
-    <div class="nav-btns">
-      <button class="btn-detect-main" onclick="openCameraDetect()">
-        <i class="fa-solid fa-camera"></i> 📸 สแกนซองอาหาร
-      </button>
-      <button class="btn-add-main" onclick="openModal('add')">
-        <i class="fa-solid fa-plus"></i> นำเข้าสินค้า
-      </button>
+<div class="container">
+  <h1>🐾 Magma Market - สต็อกอาหารสัตว์</h1>
+
+  <!-- 📸 1. ส่วนสแกนภาพด้วย AI -->
+  <div class="card-box">
+    <h2>📸 สแกนซองอาหารด้วย Gemini AI</h2>
+    <div class="scan-section">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImageScan(event)">
+      <button class="btn btn-scan" onclick="document.getElementById('cameraInput').click()">📷 ถ่ายรูป / เลือกรูปซองอาหาร</button>
+      <div id="scanStatus"></div>
     </div>
   </div>
 
-  <!-- 📑 Navigation Tabs -->
-  <div class="tab-bar">
-    <a href="index.html" class="tab-btn active">
-      <i class="fa-solid fa-boxes-stacked"></i> รายการสินค้า
-    </a>
-    <a href="dashboard.html" class="tab-btn">
-      <i class="fa-solid fa-chart-pie"></i> Dashboard สรุปยอด
-    </a>
-  </div>
-
-  <div class="container">
-    <div class="controls">
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาชื่อซองอาหาร, ยี่ห้อ, ขนาด..." oninput="filterProducts()">
-      </div>
-    </div>
-
-    <div id="productGrid" class="product-grid"></div>
-
-    <div id="statusMsg" style="text-align: center; padding: 40px; color: #888;">
-      <p>กำลังโหลดรายการสินค้า...</p>
-    </div>
-  </div>
-
-  <!-- 🪟 Modal 1: กล้อง Detect ซองอาหาร -->
-  <div id="cameraModal" class="modal">
-    <div class="modal-content" style="text-align: center;">
-      <div class="modal-header">
-        <h3>สแกนตรวจจับซองอาหาร (AI)</h3>
-        <i class="fa-solid fa-xmark" onclick="closeCameraDetect()" style="cursor:pointer;"></i>
-      </div>
-      
-      <div class="camera-box">
-        <video id="videoElement" autoplay playsinline></video>
-        <div class="detect-overlay"></div>
+  <!-- 📝 2. ฟอร์มเพิ่มสินค้า -->
+  <div class="card-box">
+    <h2>➕ เพิ่ม/แก้ไข ข้อมูลสินค้า</h2>
+    <form id="productForm" onsubmit="saveProduct(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>ยี่ห้อ (Brand)</label>
+          <input type="text" id="brand" placeholder="เช่น SmartHeart, Royal Canin" required>
+        </div>
+        <div class="form-group">
+          <label>ชื่อสูตร/สินค้า</label>
+          <input type="text" id="name" placeholder="เช่น อาหารสุนัขโต รสตับ" required>
+        </div>
       </div>
 
-      <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">จัดวางซองอาหารให้อยู่ในกรอบ แล้วกดถ่ายรูป AI จะแกะข้อความให้อัตโนมัติ</p>
-
-      <button id="captureBtn" class="btn-capture" onclick="captureBagImage()">
-        <i class="fa-solid fa-camera"></i> ถ่ายรูปตรวจจับ
-      </button>
-      <canvas id="canvasElement" style="display:none;"></canvas>
-    </div>
-  </div>
-
-  <!-- 🪟 Modal 2: ป๊อปอัปจัดการข้อมูลหลัง Detect -->
-  <div id="detectedResultModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="detectResultTitle">ผลการวิเคราะห์ซองอาหาร (AI)</h3>
-        <i class="fa-solid fa-xmark" onclick="closeDetectResultModal()" style="cursor:pointer;"></i>
-      </div>
-
-      <div style="text-align: center; margin-bottom: 15px;">
-        <img id="detectedImgPreview" src="" style="width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd;">
-      </div>
-
-      <form id="detectForm" onsubmit="handleDetectSave(event)">
-        <div class="form-group" style="background:#f0f4f8; padding:10px; border-radius:8px;">
-          <label style="font-weight:600; color:#1565c0;">🔍 เลือกรายการสินค้าเดิมในระบบ (ถ้ามี):</label>
-          <select id="existingProductSelect" class="form-control" onchange="onExistingProductSelected()">
-            <option value="">-- สร้างสินค้าใหม่ (ไม่มีในระบบ) --</option>
+      <div class="form-row">
+        <div class="form-group">
+          <label>ขนาด/ปริมาตร</label>
+          <input type="number" step="any" id="volumeValue" placeholder="เช่น 1.2 หรือ 500">
+        </div>
+        <div class="form-group">
+          <label>หน่วย</label>
+          <select id="volumeUnit">
+            <option value="kg">kg (กิโลกรัม)</option>
+            <option value="g">g (กรัม)</option>
+            <option value="ml">ml (มิลลิลิตร)</option>
+            <option value="L">L (ลิตร)</option>
+            <option value="ถุง">ถุง/ชิ้น</option>
           </select>
         </div>
+      </div>
 
+      <div class="form-row">
         <div class="form-group">
-          <label>ชื่อสินค้า / ยี่ห้อซองอาหาร *</label>
-          <input type="text" id="detectBrand" class="form-control" required placeholder="ยี่ห้อสินค้าจะถูกกรอกให้อัตโนมัติ..." oninput="updateStockDropdownOptions()">
+          <label>จำนวนคงเหลือ (ถุง)</label>
+          <input type="number" id="stock" placeholder="0" required>
         </div>
-
-        <div class="form-group">
-          <label>การกระทำ *</label>
-          <select id="detectActionType" class="form-control" required onchange="toggleStockSelectView()">
-            <option value="">-- กรุณาเลือกการกระทำ --</option>
-            <option value="deduct">ตัดออกจากสต็อก (-)</option>
-            <option value="addQty">เพิ่มเข้าสต็อก (+)</option>
-          </select>
-        </div>
-
-        <div class="form-group" id="stockSelectGroup" style="display: none; background: #e8f5e9; padding: 10px; border-radius: 8px;">
-          <label style="color:#2e7d32; font-weight:600;">เลือก LOT เดิมที่จะเติมสต็อกเข้า *</label>
-          <select id="detectStockSelect" class="form-control" onchange="onStockSelectChange()">
-            <option value="new">+ สร้าง LOT / ขนาดใหม่</option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>ขนาดตัวเลข *</label>
-            <input type="number" id="detectVolumeValue" class="form-control" step="any" placeholder="เช่น 500, 1.2" required>
-          </div>
-          <div class="form-group">
-            <label>หน่วยขนาด *</label>
-            <select id="detectVolumeUnit" class="form-control">
-              <option value="g">กรัม (g)</option>
-              <option value="kg" selected>กิโลกรัม (kg)</option>
-              <option value="ml">มิลลิลิตร (ml)</option>
-              <option value="L">ลิตร (L)</option>
-              <option value="ชิ้น">ชิ้น</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>จำนวนนำเข้า/ตัดออก (ถุง/ชิ้น) *</label>
-          <input type="number" id="detectQty" class="form-control" value="1" min="1" required>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>ราคาต้นทุน (บาท)</label>
-            <input type="number" id="detectCostPrice" class="form-control" step="0.01" placeholder="0.00" oninput="calculateSuggestedPrice('detect')">
-          </div>
-          <div class="form-group">
-            <label>บวกกำไร (%)</label>
-            <select id="detectProfitPercent" class="form-control" onchange="calculateSuggestedPrice('detect')">
-              <option value="0">-- ไม่บวก --</option>
-              <option value="40">40%</option>
-              <option value="50">50%</option>
-              <option value="60">60%</option>
-              <option value="70">70%</option>
-              <option value="80">80%</option>
-              <option value="90">90%</option>
-              <option value="100">100%</option>
-              <option value="120">120%</option>
-              <option value="150">150%</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>ราคาขายคำนวณอัตโนมัติ (บาท)</label>
-          <input type="number" id="detectSuggestedPrice" class="form-control" step="0.01" placeholder="0.00">
-        </div>
-
         <div class="form-group">
           <label>วันหมดอายุ</label>
-          <input type="date" id="detectExpDate" class="form-control">
-          <div class="quick-btn-group">
-            <button type="button" class="btn-quick" onclick="setExpMonths('detect', 3)">+3 เดือน</button>
-            <button type="button" class="btn-quick" onclick="setExpMonths('detect', 6)">+6 เดือน</button>
-            <button type="button" class="btn-quick" onclick="setExpMonths('detect', 12)">+1 ปี</button>
-            <button type="button" class="btn-quick" onclick="setExpMonths('detect', 0)">ไม่มีวันหมดอายุ</button>
-          </div>
+          <input type="date" id="expDate">
         </div>
-
-        <div class="form-group">
-          <label>เลข LOT สินค้า</label>
-          <input type="text" id="detectLotNo" class="form-control" placeholder="เช่น LOT-01">
-        </div>
-
-        <button type="submit" id="btnDetectSubmit" class="btn-submit">บันทึกข้อมูลเรียบร้อย</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- 🪟 Modal 3: ดูรายละเอียดจากการกด Card -->
-  <div id="cardDetailModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="cardDetailTitle">รายละเอียดสินค้า</h3>
-        <i class="fa-solid fa-xmark" onclick="closeCardDetailModal()" style="cursor:pointer;"></i>
       </div>
 
-      <div id="cardDetailContent"></div>
-    </div>
+      <button type="submit" class="btn btn-primary">💾 บันทึกสินค้าลงสต็อก</button>
+    </form>
   </div>
 
-  <!-- 🪟 Modal 4: นำสินค้าเข้าระบบ (ฟอร์มเต็ม) -->
-  <div id="productModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modalTitle">นำสินค้าเข้าระบบ</h3>
-        <i class="fa-solid fa-xmark" onclick="closeModal()" style="cursor:pointer;"></i>
+  <!-- 📦 3. รายการสินค้าในสต็อก -->
+  <div class="card-box">
+    <h2>📦 รายการสินค้าในสต็อก</h2>
+    <div id="productList" class="product-grid">
+      <div class="empty-state">กำลังโหลดข้อมูล...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 📌 URL ของ Backend เซิร์ฟเวอร์ Render
+  const API_URL = 'https://magma-market-api.onrender.com/api';
+
+  // 1. โหลดรายการสินค้าเมื่อเปิดหน้าเว็บ
+  document.addEventListener('DOMContentLoaded', fetchProducts);
+
+  async function fetchProducts() {
+    try {
+      const res = await fetch(`${API_URL}/products`);
+      const products = await res.json();
+      renderProducts(products);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      document.getElementById('productList').innerHTML = '<div class="empty-state">ไม่สามารถเชื่อต่อกับเซิร์ฟเวอร์ได้</div>';
+    }
+  }
+
+  // 2. วาดการ์ดแสดงผลสินค้า (แก้ปัญหาจอกระพริบ และการ์ดหลอน)
+  function renderProducts(products) {
+    const container = document.getElementById('productList');
+    if (!container) return;
+
+    if (!products || products.length === 0) {
+      container.innerHTML = '<div class="empty-state">ยังไม่มีรายการสินค้าในระบบ</div>';
+      return;
+    }
+
+    container.innerHTML = products.map(item => `
+      <div class="product-card" id="product-card-${item.id}">
+        <div class="product-info">
+          <h3>${item.brand && item.brand !== '-' ? item.brand : 'ไม่ระบุยี่ห้อ'}</h3>
+          <p><strong>ชื่อ:</strong> ${item.name || 'ไม่ระบุ'}</p>
+          <p><strong>ขนาด:</strong> ${item.size || (item.volumeValue ? item.volumeValue + ' ' + item.volumeUnit : 'ไม่ได้ระบุ')}</p>
+          <p><strong>คงเหลือ:</strong> ${item.stock ?? item.quantity ?? 0} ถุง</p>
+          <p><strong>วันหมดอายุ:</strong> ${item.expDate || 'ไม่ระบุ'}</p>
+        </div>
+        <div style="margin-top: 15px; text-align: right;">
+          <button class="btn-delete" onclick="deleteProduct('${item.id}')">🗑️ ลบรายการ</button>
+        </div>
       </div>
-      
-      <form id="productForm" onsubmit="saveProduct(event)">
-        <input type="hidden" id="formAction" value="add">
-        <input type="hidden" id="formRowIndex" value="">
-        <input type="hidden" id="imageUrl" value="">
+    `).join('');
+  }
 
-        <div class="form-group">
-          <label>ชื่อสินค้า / ยี่ห้อซองอาหาร *</label>
-          <input type="text" id="brand" class="form-control" required>
-        </div>
+  // 3. ฟังก์ชันสแกนภาพซองด้วย AI
+  async function handleImageScan(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>ขนาดตัวเลข *</label>
-            <input type="number" id="volumeValue" class="form-control" step="any" placeholder="เช่น 500, 1" required>
-          </div>
-          <div class="form-group">
-            <label>หน่วยขนาด *</label>
-            <select id="volumeUnit" class="form-control">
-              <option value="g">กรัม (g)</option>
-              <option value="kg" selected>กิโลกรัม (kg)</option>
-              <option value="ml">มิลลิลิตร (ml)</option>
-              <option value="L">ลิตร (L)</option>
-              <option value="ชิ้น">ชิ้น</option>
-            </select>
-          </div>
-        </div>
+    const statusDiv = document.getElementById('scanStatus');
+    statusDiv.innerHTML = '⏳ กำลังส่งภาพให้ AI วิเคราะห์...';
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>จำนวนนำเข้า *</label>
-            <input type="number" id="totalQty" class="form-control" required min="1">
-          </div>
-          <div class="form-group" id="remainingGroup" style="display: none;">
-            <label>คงเหลือ</label>
-            <input type="number" id="remainingQty" class="form-control" min="0">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>ราคาต้นทุน</label>
-            <input type="number" id="costPrice" class="form-control" step="0.01" oninput="calculateSuggestedPrice('full')">
-          </div>
-          <div class="form-group">
-            <label>บวกกำไร (%)</label>
-            <select id="profitPercent" class="form-control" onchange="calculateSuggestedPrice('full')">
-              <option value="0">-- ไม่บวก --</option>
-              <option value="40">40%</option>
-              <option value="50">50%</option>
-              <option value="60">60%</option>
-              <option value="70">70%</option>
-              <option value="80">80%</option>
-              <option value="90">90%</option>
-              <option value="100">100%</option>
-              <option value="120">120%</option>
-              <option value="150">150%</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>ราคาขายคำนวณอัตโนมัติ (บาท)</label>
-          <input type="number" id="suggestedPrice" class="form-control" step="0.01">
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>วันที่นำเข้า</label>
-            <input type="date" id="importDate" class="form-control">
-          </div>
-          <div class="form-group">
-            <label>วันหมดอายุ</label>
-            <input type="date" id="expDate" class="form-control">
-            <div class="quick-btn-group">
-              <button type="button" class="btn-quick" onclick="setExpMonths('full', 3)">+3 เดือน</button>
-              <button type="button" class="btn-quick" onclick="setExpMonths('full', 6)">+6 เดือน</button>
-              <button type="button" class="btn-quick" onclick="setExpMonths('full', 12)">+1 ปี</button>
-              <button type="button" class="btn-quick" onclick="setExpMonths('full', 0)">ไม่มีวันหมดอายุ</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>เลข LOT สินค้า</label>
-          <input type="text" id="lotNo" class="form-control" placeholder="เช่น LOT-2026A">
-        </div>
-
-        <div class="form-group">
-          <label>รูปถ่ายซองอาหาร (อัปโหลดอัตโนมัติ)</label>
-          <input type="file" id="imageFile" class="form-control" accept="image/*">
-        </div>
-
-        <div class="form-group">
-          <label>หมายเหตุ</label>
-          <input type="text" id="note" class="form-control">
-        </div>
-
-        <button type="submit" id="submitBtn" class="btn-submit">บันทึกนำเข้าระบบ</button>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    const API_URL = 'https://magma-market-api.onrender.com/api/products';
-    const IMGBB_API_KEY = 'd6088edb9697a26a2e94f3ba26801487';
-    
-    let allProducts = [];
-    let groupedProducts = {};
-    let mediaStream = null;
-    let detectedUploadedUrl = '';
-
-    document.addEventListener('DOMContentLoaded', loadProducts);
-
-    async function loadProducts() {
-      try {
-        const res = await fetch(API_URL);
-        allProducts = await res.json();
-        groupProductsByBrand();
-        renderGrid();
-      } catch (err) {
-        document.getElementById('statusMsg').innerHTML = '<p style="color:red;">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</p>';
-      }
-    }
-
-    function groupProductsByBrand() {
-      groupedProducts = {};
-      allProducts.forEach(p => {
-        const brandKey = (p.brand || 'ไม่ระบุแบรนด์').trim();
-        if (!groupedProducts[brandKey]) {
-          groupedProducts[brandKey] = [];
-        }
-        groupedProducts[brandKey].push(p);
-      });
-    }
-
-    function calculateSuggestedPrice(prefix) {
-      const costId = prefix === 'detect' ? 'detectCostPrice' : 'costPrice';
-      const percentId = prefix === 'detect' ? 'detectProfitPercent' : 'profitPercent';
-      const suggestedId = prefix === 'detect' ? 'detectSuggestedPrice' : 'suggestedPrice';
-
-      const cost = parseFloat(document.getElementById(costId).value) || 0;
-      const percent = parseFloat(document.getElementById(percentId).value) || 0;
-
-      if (cost > 0) {
-        const calculated = cost + (cost * (percent / 100));
-        document.getElementById(suggestedId).value = Math.ceil(calculated);
-      }
-    }
-
-    function setExpMonths(prefix, months) {
-      const expInputId = prefix === 'detect' ? 'detectExpDate' : 'expDate';
-      const input = document.getElementById(expInputId);
-
-      if (months === 0) {
-        input.value = '';
-        return;
-      }
-
-      const today = new Date();
-      today.setMonth(today.getMonth() + months);
-      
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-
-      input.value = `${year}-${month}-${day}`;
-    }
-
-    function renderGrid() {
-      const grid = document.getElementById('productGrid');
-      document.getElementById('statusMsg').style.display = 'none';
-      
-      const brands = Object.keys(groupedProducts);
-      if (brands.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">ไม่พบรายการสินค้า</p>';
-        return;
-      }
-
-      grid.innerHTML = brands.map(brandName => {
-        const items = groupedProducts[brandName];
-        const totalLots = items.length;
-        const totalRemaining = items.reduce((sum, item) => sum + (item.remainingQty || 0), 0);
-        const firstItem = items[0];
-        const unit = firstItem.unit || 'ถุง';
-
-        return `
-          <div class="product-card" onclick="openCardDetailModal('${brandName.replace(/'/g, "\\'")}')">
-            <img src="${firstItem.imageUrl || 'https://via.placeholder.com/150?text=No+Image'}" class="product-img" onerror="this.src='https://via.placeholder.com/150?text=Error';">
-            <div class="product-details">
-              <div>
-                <div class="product-brand">${brandName} (${totalLots} LOT)</div>
-                <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">
-                  ขนาดที่มี: ${items.map(i => i.volume || 'ทั่วไป').join(', ')}
-                </div>
-                <span class="badge-qty ${totalRemaining <= 5 ? 'low' : ''}" style="margin-top:6px;">
-                  คงเหลือรวม ${totalRemaining} ${unit}
-                </span>
-              </div>
-
-              <div class="card-actions" onclick="event.stopPropagation()">
-                <button class="btn-act btn-deduct" onclick="handleDeduct('${firstItem.rowIndex}', '${brandName}')">-1</button>
-                <button class="btn-act btn-edit" onclick="openModal('edit', '${firstItem.rowIndex}')">แก้ไข</button>
-                <button class="btn-act btn-delete" onclick="handleDelete('${firstItem.rowIndex}', '${brandName}')">ลบ</button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function openCardDetailModal(brandName) {
-      const items = groupedProducts[brandName];
-      if (!items) return;
-
-      document.getElementById('cardDetailTitle').innerText = `${brandName} (รวม ${items.length} LOT)`;
-      
-      const content = items.map(item => `
-        <div class="lot-item-box">
-          <div>
-            <div><b>ขนาด: ${item.volume || 'ไม่ได้ระบุ'}</b> ${item.lotNo ? `<span style="font-size:0.75rem; color:#888;">(LOT: ${item.lotNo})</span>` : ''}</div>
-            <div style="font-size: 0.8rem; color: #666;">
-              คงเหลือ: <b style="color:#2e7d32;">${item.remainingQty}</b> / ${item.totalQty} ${item.unit || 'ถุง'}
-              ${item.expDate ? ` | หมดอายุ: ${item.expDate}` : ' | ไม่ระบุหมดอายุ'}
-            </div>
-          </div>
-          <div style="display:flex; gap:4px;">
-            <button class="btn-act btn-deduct" onclick="handleDeduct('${item.rowIndex}', '${brandName}')">-1</button>
-            <button class="btn-act btn-edit" onclick="closeCardDetailModal(); openModal('edit', '${item.rowIndex}')">แก้ไข</button>
-          </div>
-        </div>
-      `).join('');
-
-      document.getElementById('cardDetailContent').innerHTML = content;
-      document.getElementById('cardDetailModal').style.display = 'flex';
-    }
-
-    function closeCardDetailModal() {
-      document.getElementById('cardDetailModal').style.display = 'none';
-    }
-
-    async function openCameraDetect() {
-      document.getElementById('cameraModal').style.display = 'flex';
-      const video = document.getElementById('videoElement');
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const base64Image = e.target.result;
 
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        video.srcObject = mediaStream;
-      } catch (err) {
-        alert('ไม่สามารถเปิดกล้องได้');
-        closeCameraDetect();
-      }
-    }
-
-    function closeCameraDetect() {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(t => t.stop());
-        mediaStream = null;
-      }
-      document.getElementById('cameraModal').style.display = 'none';
-    }
-
-    /* 🤖 ฟังก์ชันถ่ายภาพและส่งให้ Gemini AI อ่านซองอาหาร */
-    async function captureBagImage() {
-      const video = document.getElementById('videoElement');
-      const canvas = document.getElementById('canvasElement');
-      const btn = document.getElementById('captureBtn');
-
-      btn.disabled = true;
-      btn.innerText = '🤖 AI กำลังอ่านซองอาหาร...';
-
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageBase64 = canvas.toDataURL('image/jpeg');
-
-      try {
-        // 1. ส่งรูปภาพให้ Gemini AI ที่ Backend
-        const aiRes = await fetch('https://magma-market-api.onrender.com/api/scan-bag', {
+        const res = await fetch(`${API_URL}/scan-bag`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: imageBase64 })
+          body: JSON.stringify({ imageBase64: base64Image })
         });
 
-        const aiResult = await aiRes.json();
+        const result = await res.json();
 
-        // 2. อัปโหลดฝากรูปที่ ImgBB
-        canvas.toBlob(async (blob) => {
-          try {
-            const file = new File([blob], "bag_detect.jpg", { type: "image/jpeg" });
-            detectedUploadedUrl = await uploadToImgBB(file);
-            document.getElementById('detectedImgPreview').src = detectedUploadedUrl;
-          } catch (e) {
-            console.warn('อัปโหลด ImgBB ไม่สำเร็จ');
-          }
-        }, 'image/jpeg');
+        if (result.status === 'success' && result.data) {
+          const aiData = result.data;
+          
+          // กรอกข้อมูลลงฟอร์มอัตโนมัติ
+          document.getElementById('brand').value = aiData.brand || '';
+          document.getElementById('name').value = aiData.productName || '';
+          if (aiData.volumeValue) document.getElementById('volumeValue').value = aiData.volumeValue;
+          if (aiData.volumeUnit) document.getElementById('volumeUnit').value = aiData.volumeUnit;
 
-        // 3. ปิดกล้องและเคลียร์ฟอร์ม
-        closeCameraDetect();
-        document.getElementById('detectForm').reset();
-        document.getElementById('detectActionType').value = "";
-
-        // 4. หยอดข้อมูลที่ AI อ่านได้ลงในช่องให้อัตโนมัติ!
-        if (aiResult.status === 'success' && aiResult.data) {
-          const { brand, volumeValue, volumeUnit } = aiResult.data;
-
-          if (brand) document.getElementById('detectBrand').value = brand;
-          if (volumeValue) document.getElementById('detectVolumeValue').value = volumeValue;
-          if (volumeUnit) document.getElementById('detectVolumeUnit').value = volumeUnit;
+          statusDiv.innerHTML = '✅ AI สแกนอ่านข้อมูลสำเร็จ! กรุณาตรวจสอบแล้วกดบันทึก';
         } else {
-          alert('⚠️ AI ไม่สามารถอ่านข้อมูลซองอาหารได้ชัดเจน กรุณากรอกข้อมูลเองเพิ่มเติม');
-        }
-
-        populateExistingProductsDropdown();
-        toggleStockSelectView();
-
-        document.getElementById('detectedResultModal').style.display = 'flex';
-
-      } catch (err) {
-        alert('ไม่สามารถเชื่อมต่อระบบ AI Scan ได้ กรุณาตรวจสอบเซิร์ฟเวอร์');
-      } finally {
-        btn.disabled = false;
-        btn.innerText = 'ถ่ายรูปตรวจจับ';
-      }
-    }
-
-    function populateExistingProductsDropdown() {
-      const select = document.getElementById('existingProductSelect');
-      select.innerHTML = '<option value="">-- สร้างสินค้าใหม่ (ไม่มีในระบบ) --</option>';
-
-      allProducts.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.rowIndex;
-        opt.innerText = `${p.brand} [ขนาด: ${p.volume || 'ทั่วไป'} | LOT: ${p.lotNo || '-'}]`;
-        select.appendChild(opt);
-      });
-    }
-
-    function onExistingProductSelected() {
-      const selectedId = document.getElementById('existingProductSelect').value;
-      
-      document.getElementById('detectActionType').value = "";
-      toggleStockSelectView();
-
-      if (!selectedId) {
-        document.getElementById('detectBrand').value = '';
-        document.getElementById('detectVolumeValue').value = '';
-        document.getElementById('detectCostPrice').value = '';
-        document.getElementById('detectSuggestedPrice').value = '';
-        document.getElementById('detectExpDate').value = '';
-        document.getElementById('detectLotNo').value = '';
-        return;
-      }
-
-      const item = allProducts.find(p => p.rowIndex === selectedId);
-      if (item) {
-        document.getElementById('detectBrand').value = item.brand || '';
-        
-        if (item.volume) {
-          const match = item.volume.match(/^([\d.]+)\s*(.*)$/);
-          if (match) {
-            document.getElementById('detectVolumeValue').value = match[1];
-            if (match[2]) document.getElementById('detectVolumeUnit').value = match[2];
-          } else {
-            document.getElementById('detectVolumeValue').value = item.volume;
-          }
-        }
-
-        document.getElementById('detectCostPrice').value = item.costPrice || '';
-        document.getElementById('detectSuggestedPrice').value = item.suggestedPrice || '';
-        document.getElementById('detectExpDate').value = item.expDate || '';
-        document.getElementById('detectLotNo').value = item.lotNo || '';
-        updateStockDropdownOptions();
-      }
-    }
-
-    function toggleStockSelectView() {
-      const actionType = document.getElementById('detectActionType').value;
-      const stockGroup = document.getElementById('stockSelectGroup');
-      
-      if (actionType === 'addQty') {
-        stockGroup.style.display = 'block';
-        updateStockDropdownOptions();
-      } else {
-        stockGroup.style.display = 'none';
-      }
-    }
-
-    function updateStockDropdownOptions() {
-      const brand = document.getElementById('detectBrand').value.trim().toLowerCase();
-      const select = document.getElementById('detectStockSelect');
-      
-      select.innerHTML = '<option value="new">+ สร้าง LOT / ขนาดใหม่</option>';
-
-      if (!brand) return;
-
-      const matchedItems = allProducts.filter(p => (p.brand || '').toLowerCase().includes(brand));
-      
-      matchedItems.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item.rowIndex;
-        opt.innerText = `LOT: ${item.lotNo || 'ทั่วไป'} | ขนาด: ${item.volume || 'ไม่ระบุ'}`;
-        select.appendChild(opt);
-      });
-    }
-
-    function onStockSelectChange() {
-      const selectedId = document.getElementById('detectStockSelect').value;
-      if (selectedId !== 'new') {
-        const item = allProducts.find(p => p.rowIndex === selectedId);
-        if (item) {
-          if (item.volume) {
-            const match = item.volume.match(/^([\d.]+)\s*(.*)$/);
-            if (match) {
-              document.getElementById('detectVolumeValue').value = match[1];
-              if (match[2]) document.getElementById('detectVolumeUnit').value = match[2];
-            }
-          }
-          document.getElementById('detectCostPrice').value = item.costPrice || '';
-          document.getElementById('detectSuggestedPrice').value = item.suggestedPrice || '';
-          document.getElementById('detectExpDate').value = item.expDate || '';
-          document.getElementById('detectLotNo').value = item.lotNo || '';
-        }
-      }
-    }
-
-    async function handleDetectSave(e) {
-      e.preventDefault();
-      
-      const brand = document.getElementById('detectBrand').value.trim();
-      const volVal = document.getElementById('detectVolumeValue').value.trim();
-      const volUnit = document.getElementById('detectVolumeUnit').value;
-      const combinedVolume = `${volVal} ${volUnit}`.trim();
-
-      const qty = Number(document.getElementById('detectQty').value) || 1;
-      const actionType = document.getElementById('detectActionType').value;
-      const selectedStockId = document.getElementById('detectStockSelect').value;
-
-      if (!actionType) {
-        alert('กรุณาเลือกการกระทำ (ตัดออกจากสต็อก หรือ เพิ่มเข้าสต็อก)');
-        return;
-      }
-
-      const costPrice = Number(document.getElementById('detectCostPrice').value) || 0;
-      const suggestedPrice = Number(document.getElementById('detectSuggestedPrice').value) || 0;
-      const expDate = document.getElementById('detectExpDate').value;
-      const lotNo = document.getElementById('detectLotNo').value;
-
-      if (actionType === 'addQty') {
-        if (selectedStockId !== 'new') {
-          const targetItem = allProducts.find(p => p.rowIndex === selectedStockId);
-          if (targetItem) {
-            const newTotal = (targetItem.totalQty || 0) + qty;
-            const newRemaining = (targetItem.remainingQty || 0) + qty;
-
-            await sendApiRequest({
-              action: 'edit',
-              rowIndex: targetItem.rowIndex,
-              brand: brand || targetItem.brand,
-              volume: combinedVolume || targetItem.volume,
-              totalQty: newTotal,
-              remainingQty: newRemaining,
-              costPrice: costPrice || targetItem.costPrice,
-              suggestedPrice: suggestedPrice || targetItem.suggestedPrice,
-              expDate: expDate || targetItem.expDate,
-              lotNo: lotNo || targetItem.lotNo,
-              unit: targetItem.unit
-            });
-          }
-        } else {
-          await sendApiRequest({
-            action: 'add',
-            brand: brand,
-            volume: combinedVolume,
-            unit: 'ถุง',
-            totalQty: qty,
-            costPrice: costPrice,
-            suggestedPrice: suggestedPrice,
-            expDate: expDate,
-            lotNo: lotNo,
-            imageUrl: detectedUploadedUrl
-          });
-        }
-      } else {
-        const existingItem = allProducts.find(p => p.brand.toLowerCase() === brand.toLowerCase() && p.volume === combinedVolume);
-        if (existingItem) {
-          const newQty = Math.max(0, existingItem.remainingQty - qty);
-          await sendApiRequest({
-            action: 'edit',
-            rowIndex: existingItem.rowIndex,
-            brand: existingItem.brand,
-            volume: existingItem.volume,
-            remainingQty: newQty,
-            totalQty: existingItem.totalQty,
-            unit: existingItem.unit
-          });
-        } else {
-          alert('ไม่พบรายการสินค้าและขนาดที่ระบุเพื่อทำการตัดสต็อก');
-          return;
-        }
-      }
-
-      closeDetectResultModal();
-      await loadProducts();
-    }
-
-    function closeDetectResultModal() {
-      document.getElementById('detectedResultModal').style.display = 'none';
-    }
-
-    async function uploadToImgBB(file) {
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
-      const data = await res.json();
-      if (data.success) return data.data.url;
-      throw new Error('Upload failed');
-    }
-
-    async function sendApiRequest(payload) {
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.status === 'success') {
-          alert('บันทึกข้อมูลสำเร็จ!');
-        } else {
-          alert('ข้อผิดพลาด: ' + data.message);
+          statusDiv.innerHTML = '❌ อ่านภาพไม่สำเร็จ: ' + (result.message || 'ไม่พบข้อมูล');
         }
       } catch (err) {
-        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+        console.error('Scan Error:', err);
+        statusDiv.innerHTML = '❌ เกิดข้อผิดพลาดในการส่งภาพไปสแกน';
       }
-    }
+    };
+    reader.readAsDataURL(file);
+  }
 
-    async function handleDeduct(id, name) {
-      if (confirm(`ยืนยันการตัดสต็อก (-1) ของ "${name}"?`)) {
-        await sendApiRequest({ action: 'deduct', rowIndex: id, deductQty: 1 });
-        await loadProducts();
-      }
-    }
+  // 4. บันทึกสินค้าใหม่
+  async function saveProduct(event) {
+    event.preventDefault();
 
-    async function handleDelete(id, name) {
-      if (confirm(`⚠️ ยืนยันการลบ "${name}"?`)) {
-        await sendApiRequest({ action: 'delete', rowIndex: id });
-        await loadProducts();
-      }
-    }
+    const productData = {
+      brand: document.getElementById('brand').value,
+      name: document.getElementById('name').value,
+      volumeValue: document.getElementById('volumeValue').value,
+      volumeUnit: document.getElementById('volumeUnit').value,
+      stock: document.getElementById('stock').value,
+      expDate: document.getElementById('expDate').value
+    };
 
-    async function saveProduct(e) {
-      e.preventDefault();
-      const action = document.getElementById('formAction').value;
-      const fileInput = document.getElementById('imageFile');
-      let finalImg = document.getElementById('imageUrl').value;
-
-      if (fileInput.files.length > 0) {
-        try {
-          finalImg = await uploadToImgBB(fileInput.files[0]);
-        } catch (err) {
-          alert('อัปโหลดรูปภาพไม่สำเร็จ');
-          return;
-        }
-      }
-
-      const volVal = document.getElementById('volumeValue').value.trim();
-      const volUnit = document.getElementById('volumeUnit').value;
-
-      const payload = {
-        action: action,
-        rowIndex: document.getElementById('formRowIndex').value,
-        brand: document.getElementById('brand').value,
-        volume: `${volVal} ${volUnit}`.trim(),
-        unit: 'ถุง',
-        totalQty: Number(document.getElementById('totalQty').value) || 0,
-        costPrice: Number(document.getElementById('costPrice').value) || 0,
-        suggestedPrice: Number(document.getElementById('suggestedPrice').value) || 0,
-        importDate: document.getElementById('importDate').value,
-        expDate: document.getElementById('expDate').value,
-        lotNo: document.getElementById('lotNo').value,
-        imageUrl: finalImg,
-        note: document.getElementById('note').value
-      };
-
-      if (action === 'edit') {
-        payload.remainingQty = Number(document.getElementById('remainingQty').value);
-      }
-
-      await sendApiRequest(payload);
-      closeModal();
-      await loadProducts();
-    }
-
-    function filterProducts() {
-      const kw = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = {};
-      Object.keys(groupedProducts).forEach(b => {
-        if (b.toLowerCase().includes(kw)) {
-          filtered[b] = groupedProducts[b];
-        }
+    try {
+      const res = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
       });
-      
-      const grid = document.getElementById('productGrid');
-      const brands = Object.keys(filtered);
-      
-      if (brands.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">ไม่พบรายการสินค้า</p>';
-        return;
-      }
 
-      grid.innerHTML = brands.map(brandName => {
-        const items = filtered[brandName];
-        const totalLots = items.length;
-        const totalRemaining = items.reduce((sum, item) => sum + (item.remainingQty || 0), 0);
-        const firstItem = items[0];
+      const result = await res.json();
 
-        return `
-          <div class="product-card" onclick="openCardDetailModal('${brandName.replace(/'/g, "\\'")}')">
-            <img src="${firstItem.imageUrl || 'https://via.placeholder.com/150?text=No+Image'}" class="product-img">
-            <div class="product-details">
-              <div>
-                <div class="product-brand">${brandName} (${totalLots} LOT)</div>
-                <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">
-                  ขนาดที่มี: ${items.map(i => i.volume || 'ทั่วไป').join(', ')}
-                </div>
-                <span class="badge-qty ${totalRemaining <= 5 ? 'low' : ''}" style="margin-top:6px;">
-                  คงเหลือรวม ${totalRemaining} ${firstItem.unit || 'ถุง'}
-                </span>
-              </div>
-
-              <div class="card-actions" onclick="event.stopPropagation()">
-                <button class="btn-act btn-deduct" onclick="handleDeduct('${firstItem.rowIndex}', '${brandName}')">-1</button>
-                <button class="btn-act btn-edit" onclick="openModal('edit', '${firstItem.rowIndex}')">แก้ไข</button>
-                <button class="btn-act btn-delete" onclick="handleDelete('${firstItem.rowIndex}', '${brandName}')">ลบ</button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function openModal(mode, id = null) {
-      const modal = document.getElementById('productModal');
-      document.getElementById('productForm').reset();
-
-      if (mode === 'add') {
-        document.getElementById('modalTitle').innerText = 'นำสินค้าเข้าระบบ';
-        document.getElementById('formAction').value = 'add';
-        document.getElementById('remainingGroup').style.display = 'none';
+      if (result.status === 'success') {
+        alert('บันทึกสินค้าเรียบร้อย!');
+        document.getElementById('productForm').reset();
+        document.getElementById('scanStatus').innerHTML = '';
+        fetchProducts(); // โหลดรายการสินค้าใหม่
       } else {
-        const item = allProducts.find(p => p.rowIndex === id);
-        if (!item) return;
-
-        document.getElementById('modalTitle').innerText = 'แก้ไขข้อมูลสินค้า';
-        document.getElementById('formAction').value = 'edit';
-        document.getElementById('formRowIndex').value = id;
-        document.getElementById('remainingGroup').style.display = 'block';
-
-        document.getElementById('brand').value = item.brand || '';
-        
-        if (item.volume) {
-          const match = item.volume.match(/^([\d.]+)\s*(.*)$/);
-          if (match) {
-            document.getElementById('volumeValue').value = match[1];
-            if (match[2]) document.getElementById('volumeUnit').value = match[2];
-          } else {
-            document.getElementById('volumeValue').value = item.volume;
-          }
-        }
-
-        document.getElementById('totalQty').value = item.totalQty || 0;
-        document.getElementById('remainingQty').value = item.remainingQty !== undefined ? item.remainingQty : item.totalQty;
-        document.getElementById('costPrice').value = item.costPrice || '';
-        document.getElementById('suggestedPrice').value = item.suggestedPrice || '';
-        document.getElementById('importDate').value = item.importDate || '';
-        document.getElementById('expDate').value = item.expDate || '';
-        document.getElementById('lotNo').value = item.lotNo || '';
-        document.getElementById('imageUrl').value = item.imageUrl || '';
-        document.getElementById('note').value = item.note || '';
+        alert('เกิดข้อผิดพลาด: ' + result.message);
       }
-
-      modal.style.display = 'flex';
+    } catch (err) {
+      console.error('Save Error:', err);
+      alert('ไม่สามารถบันทึกข้อมูลได้');
     }
+  }
 
-    function closeModal() {
-      document.getElementById('productModal').style.display = 'none';
+  // 5. ลบสินค้าแบบตรงจุด (ไม่กระพริบ)
+  async function deleteProduct(id) {
+    if (!confirm('ยืนยันการลบรายการนี้ใช่หรือไม่?')) return;
+
+    try {
+      const res = await fetch(`${API_URL}/products/${id}`, {
+        method: 'DELETE'
+      });
+
+      const result = await res.json();
+
+      if (result.status === 'success') {
+        // ลบเฉพาะการ์ดใบนั้นออกจากหน้าจอทันที
+        const card = document.getElementById(`product-card-${id}`);
+        if (card) card.remove();
+
+        // ถ้าไม่มีการ์ดเหลือเลย ให้แสดงข้อความว่าว่างเปล่า
+        const container = document.getElementById('productList');
+        if (container && container.children.length === 0) {
+          container.innerHTML = '<div class="empty-state">ยังไม่มีรายการสินค้าในระบบ</div>';
+        }
+      } else {
+        alert('ลบไม่สำเร็จ: ' + result.message);
+      }
+    } catch (err) {
+      console.error('Delete Error:', err);
+      alert('เกิดข้อผิดพลาดในการลบรายการ');
     }
-  </script>
+  }
+</script>
+
 </body>
 </html>
