@@ -4,61 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Magma Market - ระบบจัดการสต็อกอาหารสัตว์</title>
-  <style>
-    * { box-sizing: border-box; font-family: 'Kanit', sans-serif, Tahoma; }
-    body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 900px; margin: 0 auto; }
-    h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
-    
-    .card-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    h2 { margin-top: 0; color: #34495e; font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 8px; }
-    
-    /* Form & Inputs */
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; }
-    input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-    .form-row { display: flex; gap: 10px; }
-    .form-row .form-group { flex: 1; }
-    
-    /* Buttons */
-    .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-    .btn-primary { background: #3498db; color: white; width: 100%; }
-    .btn-primary:hover { background: #2980b9; }
-    .btn-scan { background: #8e44ad; color: white; margin-top: 10px; width: 100%; }
-    .btn-scan:hover { background: #7d3c98; }
-    .btn-delete { background: #e74c3c; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; }
-    .btn-delete:hover { background: #c0392b; }
-
-    /* AI Scanner Area */
-    .scan-section { text-align: center; border: 2px dashed #8e44ad; padding: 20px; border-radius: 8px; background: #fdfafd; }
-    #scanStatus { margin-top: 10px; font-weight: bold; color: #8e44ad; }
-
-    /* Product List Grid */
-    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; margin-top: 15px; }
-    .product-card { background: white; border: 1px solid #e1e8ed; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
-    .product-card h3 { margin: 0 0 10px 0; color: #2c3e50; font-size: 1.1rem; }
-    .product-info p { margin: 4px 0; font-size: 0.9rem; color: #555; }
-    .empty-state { text-align: center; padding: 30px; color: #888; font-size: 1.1rem; grid-column: 1 / -1; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
   <h1>🐾 Magma Market - สต็อกอาหารสัตว์</h1>
 
-  <!-- 📸 1. ส่วนสแกนภาพด้วย AI -->
+  <!-- 📷 ส่วนเลือกรูป/ถ่ายรูป (ถอด capture="environment" ออกแล้ว เพื่อให้เลือกรุปจากคลังบนมือถือได้) -->
   <div class="card-box">
-    <h2>📸 สแกนซองอาหารด้วย Gemini AI</h2>
-    <div class="scan-section">
-      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleImageScan(event)">
-      <button class="btn btn-scan" onclick="document.getElementById('cameraInput').click()">📷 ถ่ายรูป / เลือกรูปซองอาหาร</button>
-      <div id="scanStatus"></div>
+    <h2>📷 แนบรูปภาพสินค้า (ตัวอย่าง)</h2>
+    <div class="upload-section">
+      <input type="file" id="cameraInput" accept="image/*" onchange="handleImageSelect(event)" style="display: none;">
+      <button type="button" class="btn btn-upload" onclick="document.getElementById('cameraInput').click()">📷 ถ่ายรูป หรือ เลือกจากอัลบั้ม</button>
+      <div id="uploadStatus"></div>
     </div>
   </div>
 
-  <!-- 📝 2. ฟอร์มเพิ่มสินค้า -->
+  <!-- 📝 ฟอร์มเพิ่มสินค้า -->
   <div class="card-box">
-    <h2>➕ เพิ่ม/แก้ไข ข้อมูลสินค้า</h2>
+    <h2>➕ เพิ่มข้อมูลสินค้า</h2>
     <form id="productForm" onsubmit="saveProduct(event)">
       <div class="form-row">
         <div class="form-group">
@@ -103,7 +68,7 @@
     </form>
   </div>
 
-  <!-- 📦 3. รายการสินค้าในสต็อก -->
+  <!-- 📦 รายการสินค้าในสต็อก -->
   <div class="card-box">
     <h2>📦 รายการสินค้าในสต็อก</h2>
     <div id="productList" class="product-grid">
@@ -112,158 +77,6 @@
   </div>
 </div>
 
-<script>
-  // 📌 URL ของ Backend เซิร์ฟเวอร์ Render
-  const API_URL = 'https://magma-market-api.onrender.com/api';
-
-  // 1. โหลดรายการสินค้าเมื่อเปิดหน้าเว็บ
-  document.addEventListener('DOMContentLoaded', fetchProducts);
-
-  async function fetchProducts() {
-    try {
-      const res = await fetch(`${API_URL}/products`);
-      const products = await res.json();
-      renderProducts(products);
-    } catch (err) {
-      console.error('Error fetching products:', err);
-      document.getElementById('productList').innerHTML = '<div class="empty-state">ไม่สามารถเชื่อต่อกับเซิร์ฟเวอร์ได้</div>';
-    }
-  }
-
-  // 2. วาดการ์ดแสดงผลสินค้า (แก้ปัญหาจอกระพริบ และการ์ดหลอน)
-  function renderProducts(products) {
-    const container = document.getElementById('productList');
-    if (!container) return;
-
-    if (!products || products.length === 0) {
-      container.innerHTML = '<div class="empty-state">ยังไม่มีรายการสินค้าในระบบ</div>';
-      return;
-    }
-
-    container.innerHTML = products.map(item => `
-      <div class="product-card" id="product-card-${item.id}">
-        <div class="product-info">
-          <h3>${item.brand && item.brand !== '-' ? item.brand : 'ไม่ระบุยี่ห้อ'}</h3>
-          <p><strong>ชื่อ:</strong> ${item.name || 'ไม่ระบุ'}</p>
-          <p><strong>ขนาด:</strong> ${item.size || (item.volumeValue ? item.volumeValue + ' ' + item.volumeUnit : 'ไม่ได้ระบุ')}</p>
-          <p><strong>คงเหลือ:</strong> ${item.stock ?? item.quantity ?? 0} ถุง</p>
-          <p><strong>วันหมดอายุ:</strong> ${item.expDate || 'ไม่ระบุ'}</p>
-        </div>
-        <div style="margin-top: 15px; text-align: right;">
-          <button class="btn-delete" onclick="deleteProduct('${item.id}')">🗑️ ลบรายการ</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  // 3. ฟังก์ชันสแกนภาพซองด้วย AI
-  async function handleImageScan(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const statusDiv = document.getElementById('scanStatus');
-    statusDiv.innerHTML = '⏳ กำลังส่งภาพให้ AI วิเคราะห์...';
-
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      const base64Image = e.target.result;
-
-      try {
-        const res = await fetch(`${API_URL}/scan-bag`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64Image })
-        });
-
-        const result = await res.json();
-
-        if (result.status === 'success' && result.data) {
-          const aiData = result.data;
-          
-          // กรอกข้อมูลลงฟอร์มอัตโนมัติ
-          document.getElementById('brand').value = aiData.brand || '';
-          document.getElementById('name').value = aiData.productName || '';
-          if (aiData.volumeValue) document.getElementById('volumeValue').value = aiData.volumeValue;
-          if (aiData.volumeUnit) document.getElementById('volumeUnit').value = aiData.volumeUnit;
-
-          statusDiv.innerHTML = '✅ AI สแกนอ่านข้อมูลสำเร็จ! กรุณาตรวจสอบแล้วกดบันทึก';
-        } else {
-          statusDiv.innerHTML = '❌ อ่านภาพไม่สำเร็จ: ' + (result.message || 'ไม่พบข้อมูล');
-        }
-      } catch (err) {
-        console.error('Scan Error:', err);
-        statusDiv.innerHTML = '❌ เกิดข้อผิดพลาดในการส่งภาพไปสแกน';
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  // 4. บันทึกสินค้าใหม่
-  async function saveProduct(event) {
-    event.preventDefault();
-
-    const productData = {
-      brand: document.getElementById('brand').value,
-      name: document.getElementById('name').value,
-      volumeValue: document.getElementById('volumeValue').value,
-      volumeUnit: document.getElementById('volumeUnit').value,
-      stock: document.getElementById('stock').value,
-      expDate: document.getElementById('expDate').value
-    };
-
-    try {
-      const res = await fetch(`${API_URL}/products`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(productData)
-      });
-
-      const result = await res.json();
-
-      if (result.status === 'success') {
-        alert('บันทึกสินค้าเรียบร้อย!');
-        document.getElementById('productForm').reset();
-        document.getElementById('scanStatus').innerHTML = '';
-        fetchProducts(); // โหลดรายการสินค้าใหม่
-      } else {
-        alert('เกิดข้อผิดพลาด: ' + result.message);
-      }
-    } catch (err) {
-      console.error('Save Error:', err);
-      alert('ไม่สามารถบันทึกข้อมูลได้');
-    }
-  }
-
-  // 5. ลบสินค้าแบบตรงจุด (ไม่กระพริบ)
-  async function deleteProduct(id) {
-    if (!confirm('ยืนยันการลบรายการนี้ใช่หรือไม่?')) return;
-
-    try {
-      const res = await fetch(`${API_URL}/products/${id}`, {
-        method: 'DELETE'
-      });
-
-      const result = await res.json();
-
-      if (result.status === 'success') {
-        // ลบเฉพาะการ์ดใบนั้นออกจากหน้าจอทันที
-        const card = document.getElementById(`product-card-${id}`);
-        if (card) card.remove();
-
-        // ถ้าไม่มีการ์ดเหลือเลย ให้แสดงข้อความว่าว่างเปล่า
-        const container = document.getElementById('productList');
-        if (container && container.children.length === 0) {
-          container.innerHTML = '<div class="empty-state">ยังไม่มีรายการสินค้าในระบบ</div>';
-        }
-      } else {
-        alert('ลบไม่สำเร็จ: ' + result.message);
-      }
-    } catch (err) {
-      console.error('Delete Error:', err);
-      alert('เกิดข้อผิดพลาดในการลบรายการ');
-    }
-  }
-</script>
-
+<script src="script.js"></script>
 </body>
 </html>
