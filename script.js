@@ -410,6 +410,7 @@ async function stopScanner() {
   document.getElementById('reader-container').style.display = 'none';
 }
 
+// สแกนบาร์โค้ด + ขึ้น Pop-up ยืนยัน
 async function onScanSuccess(decodedText) {
   stopScanner();
   try {
@@ -419,16 +420,38 @@ async function onScanSuccess(decodedText) {
 
     if (item) {
       if (item.stock > 0) {
-        await reduceStock(item.id, item.stock);
-        alert(`🎯 ตัดสต็อกเรียบร้อย: ${item.name} (Lot: ${item.lotNo || '-'})`);
+        const productName = `${item.brand || ''} ${item.name || ''}`.trim();
+        const lotText = item.lotNo ? ` (Lot: ${item.lotNo})` : '';
+
+        // แสดง Pop-up ยืนยันชื่อสินค้า
+        const confirmCut = confirm(`🎯 สแกนพบสินค้า!\n\nต้องการตัดสต็อก (-1) ของ:\n${productName}${lotText}\n\nคงเหลือปัจจุบัน: ${item.stock} ชิ้น หรือไม่?`);
+        
+        if (confirmCut) {
+          await reduceStockDirect(item.id, item.stock);
+          alert(`✅ ตัดสต็อกเรียบร้อย: ${productName}`);
+        }
       } else {
-        alert(`⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!`);
+        alert(`⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว! (${item.name})`);
       }
     } else {
       alert(`❌ ไม่พบรหัสบาร์โค้ด: ${decodedText}`);
     }
   } catch (err) {
     alert('เกิดข้อผิดพลาดในการสแกน');
+  }
+}
+
+// ฟังก์ชันช่วยสำหรับตัดสต็อกทันทีหลังจากยืนยันจากหน้าสแกน
+async function reduceStockDirect(id, currentStock) {
+  const res = await fetch(`${API_URL}/products/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stock: currentStock - 1 })
+  });
+  const result = await res.json();
+  if (result.status === 'success') {
+    fetchProducts();
+    fetchDatabaseTable();
   }
 }
 
@@ -462,8 +485,18 @@ async function fetchDatabaseTable() {
   }
 }
 
+// กดปุ่ม - ตัดสต็อกหน้าเว็บ + ขึ้น Pop-up ยืนยัน
 async function reduceStock(id, currentStock) {
-  if (currentStock <= 0) return alert('สินค้าหมดสต็อก!');
+  if (currentStock <= 0) return alert('⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!');
+
+  const item = productsCache.find(p => String(p.id) === String(id));
+  const productName = item ? `${item.brand || ''} ${item.name || ''}`.trim() : 'สินค้า';
+  const lotText = item && item.lotNo ? ` (Lot: ${item.lotNo})` : '';
+
+  // แสดง Pop-up ยืนยันชื่อสินค้า
+  const confirmCut = confirm(`❓ ยืนยันการตัดสต็อก (-1)\n\nสินค้า: ${productName}${lotText}\nคงเหลือปัจจุบัน: ${currentStock} ชิ้น`);
+  if (!confirmCut) return;
+
   try {
     const res = await fetch(`${API_URL}/products/${id}`, {
       method: 'PUT',
