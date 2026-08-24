@@ -11,33 +11,22 @@
 <div class="container">
   <h1>🐾 Magma Market Management Portal</h1>
 
-  <!-- 📌 เมนูแท็บสลับหน้า -->
+  <!-- เมนูสลับหน้า -->
   <div class="tab-menu">
-    <button class="tab-btn active" onclick="switchTab('stock-tab')">📦 สต็อกสินค้า</button>
-    <button class="tab-btn" onclick="switchTab('manage-tab')">⚙️ จัดการฐานข้อมูล (เพิ่ม/แก้ไข)</button>
+    <button class="tab-btn active" onclick="switchTab('stock-tab')">📦 คลังสินค้า & ตัดสต็อก</button>
+    <button class="tab-btn" onclick="switchTab('database-tab')">⚙️ จัดการโครงสร้าง Database</button>
   </div>
 
-  <!-- 🟢 TAB 1: หน้ารายการสต็อกสินค้า -->
+  <!-- TAB 1: คลังสินค้า หลัก -->
   <div id="stock-tab" class="tab-content active">
+    <!-- ฟอร์มเพิ่มสินค้าเข้าสต็อก -->
     <div class="card-box">
-      <h2>📦 รายการสินค้าทั้งหมดในระบบ</h2>
-      <div id="productList" class="product-grid">
-        <div class="empty-state">กำลังโหลดข้อมูล...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 🟢 TAB 2: หน้าจัดการฐานข้อมูล (เพิ่ม / แก้ไข) -->
-  <div id="manage-tab" class="tab-content">
-    <div class="card-box">
-      <h2 id="formTitle">➕ เพิ่มสินค้าใหม่เข้าฐานข้อมูล</h2>
-      <form id="productForm" onsubmit="handleFormSubmit(event)">
-        <input type="hidden" id="productId">
-
+      <h2>➕ เพิ่มสินค้าเข้าสต็อก</h2>
+      <form id="productForm" onsubmit="handleAddProduct(event)">
         <div class="form-row">
           <div class="form-group">
             <label>ยี่ห้อ (Brand)</label>
-            <input type="text" id="brand" placeholder="เช่น SmartHeart, Royal Canin" required>
+            <input type="text" id="brand" placeholder="เช่น SmartHeart" required>
           </div>
           <div class="form-group">
             <label>ชื่อสูตร/สินค้า</label>
@@ -48,40 +37,81 @@
         <div class="form-row">
           <div class="form-group">
             <label>ขนาด/ปริมาตร</label>
-            <input type="number" step="any" id="volumeValue" placeholder="เช่น 1.2 หรือ 500">
+            <input type="number" step="any" id="volumeValue" placeholder="เช่น 1.2">
           </div>
           <div class="form-group">
             <label>หน่วย</label>
             <select id="volumeUnit">
-              <option value="kg">kg (กิโลกรัม)</option>
-              <option value="g">g (กรัม)</option>
-              <option value="ml">ml (มิลลิลิตร)</option>
-              <option value="L">L (ลิตร)</option>
+              <option value="kg">kg</option>
+              <option value="g">g</option>
               <option value="ถุง">ถุง/ชิ้น</option>
             </select>
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-group">
-            <label>ราคาขาย (บาท)</label>
-            <input type="number" id="price" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>จำนวนคงเหลือ (ถุง)</label>
+            <label>จำนวนสต็อก (ถุง)</label>
             <input type="number" id="stock" placeholder="0" required>
           </div>
-          <div class="form-group">
-            <label>วันหมดอายุ</label>
-            <input type="date" id="expDate">
-          </div>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-          <button type="submit" id="submitBtn" class="btn btn-primary">💾 บันทึกข้อมูลลง Database</button>
-          <button type="button" id="cancelBtn" class="btn btn-cancel" onclick="resetForm()" style="display: none;">❌ ยกเลิกแก้ไข</button>
-        </div>
+        <button type="submit" class="btn btn-primary">➕ บันทึกเพิ่มสต็อก</button>
       </form>
+    </div>
+
+    <!-- รายการสินค้าและปุ่มตัดสต็อก -->
+    <div class="card-box">
+      <h2>📦 รายการสินค้าคงเหลือ</h2>
+      <div id="productList" class="product-grid">
+        <div class="empty-state">กำลังโหลดข้อมูล...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: จัดการตาราง/โครงสร้าง Database -->
+  <div id="database-tab" class="tab-content">
+    <div class="card-box">
+      <h2>⚙️ ตั้งค่าโครงสร้างตารางข้อมูล (Database Table Config)</h2>
+      <p style="color: #666; font-size: 0.9rem;">จัดการ Schema และคอลัมน์ของตารางเก็บข้อมูลในระบบ</p>
+      
+      <table class="db-table">
+        <thead>
+          <tr>
+            <th>ชื่อคอลัมน์ (Column)</th>
+            <th>ประเภทข้อมูล (Type)</th>
+            <th>สถานะ</th>
+            <th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="dbSchemaBody">
+          <tr>
+            <td>id</td>
+            <td>STRING (Primary Key)</td>
+            <td><span class="badge badge-required">จำเป็น</span></td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>brand</td>
+            <td>STRING</td>
+            <td><span class="badge">ทั่วไป</span></td>
+            <td><button class="btn-sm btn-edit-schema" onclick="editColumn('brand')">✏️ แก้ไข</button></td>
+          </tr>
+          <tr>
+            <td>name</td>
+            <td>STRING</td>
+            <td><span class="badge badge-required">จำเป็น</span></td>
+            <td><button class="btn-sm btn-edit-schema" onclick="editColumn('name')">✏️ แก้ไข</button></td>
+          </tr>
+          <tr>
+            <td>stock</td>
+            <td>INTEGER</td>
+            <td><span class="badge badge-required">จำเป็น</span></td>
+            <td><button class="btn-sm btn-edit-schema" onclick="editColumn('stock')">✏️ แก้ไข</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="addNewColumn()">➕ เพิ่มคอลัมน์ใหม่ใน Database</button>
+      </div>
     </div>
   </div>
 </div>
