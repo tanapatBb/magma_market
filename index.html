@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Magma Market - Portal Management</title>
   <link rel="stylesheet" href="style.css">
-  <!-- 📌 โหลดไลบรารีสำหรับ Gen Barcode และ Scan Barcode -->
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
@@ -20,10 +19,10 @@
     <button class="tab-btn" onclick="switchTab('database-tab')">⚙️ จัดการ Database</button>
   </div>
 
-  <!-- TAB 1: คลังสินค้า หลัก -->
+  <!-- TAB 1: คลังสินค้า -->
   <div id="stock-tab" class="tab-content active">
     
-    <!-- 📷 ปุ่มสแกนเพื่อตัดสต็อก (ด้านบนสุด) -->
+    <!-- ปุ่มสแกนตัดสต็อก -->
     <div class="card-box" style="background: #eef7fe; border: 2px dashed #3498db; text-align: center;">
       <button class="btn btn-secondary" onclick="toggleScanner()" style="font-size: 1.1rem; width: 100%;">
         📷 สแกนบาร์โค้ดเพื่อตัดสต็อก (-1)
@@ -34,8 +33,15 @@
       </div>
     </div>
 
-    <!-- ฟอร์มเพิ่มสินค้าเข้าสต็อก -->
-    <div class="card-box">
+    <!-- ปุ่มเปิด/ปิด ฟอร์มเพิ่มสินค้า -->
+    <div style="margin-bottom: 15px;">
+      <button class="btn btn-primary" onclick="toggleAddForm()" style="font-size: 1rem; width: 100%;">
+        ➕ เพิ่มรายการสินค้าใหม่ (คลิกเพื่อเปิด/ปิดฟอร์ม)
+      </button>
+    </div>
+
+    <!-- ฟอร์มเพิ่มสินค้า -->
+    <div class="card-box" id="addProductFormCard" style="display: none;">
       <h2>➕ เพิ่มสินค้าเข้าสต็อก</h2>
       <form id="productForm" onsubmit="handleAddProduct(event)">
         <div class="form-row">
@@ -46,6 +52,17 @@
           <div class="form-group">
             <label>ชื่อสูตร/สินค้า</label>
             <input type="text" id="name" placeholder="เช่น อาหารสุนัขโต รสตับ" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>เลขล็อตนำเข้า (Lot No.)</label>
+            <input type="text" id="lotNo" placeholder="เช่น LOT-20260801" required>
+          </div>
+          <div class="form-group">
+            <label>จำนวนสต็อก (ถุง)</label>
+            <input type="number" id="stock" placeholder="0" required>
           </div>
         </div>
 
@@ -62,30 +79,21 @@
               <option value="ถุง">ถุง/ชิ้น</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>จำนวนสต็อก (ถุง)</label>
-            <input type="number" id="stock" placeholder="0" required>
-          </div>
         </div>
 
-        <!-- 📸 ฟิลด์ถ่ายรูปสินค้า -->
         <div class="form-group">
           <label>📸 ถ่ายรูป/เลือกรูปสินค้า</label>
           <input type="file" id="productImage" accept="image/*" capture="environment" onchange="previewImage(event)">
           <div id="imagePreviewContainer" style="margin-top: 10px; display: none;">
-            <img id="imagePreview" src="" alt="Preview" style="max-width: 120px; border-radius: 8px; border: 1px solid #ccc;">
+            <img id="imagePreview" src="" alt="Preview" style="max-width: 100px; border-radius: 8px;">
           </div>
         </div>
 
-        <!-- ปุ่มปฏิบัติการ -->
-        <div class="form-row" style="margin-top: 15px;">
-          <button type="submit" class="btn btn-primary">➕ บันทึกเพิ่มสต็อก</button>
-          <button type="button" class="btn btn-warning" onclick="generateBarcodePreview()">🏷️ Gen บาร์โค้ดตัวอย่าง</button>
-        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">💾 บันทึกข้อมูลลง Database</button>
       </form>
     </div>
 
-    <!-- รายการสินค้าและปุ่มตัดสต็อก -->
+    <!-- รายการสินค้า -->
     <div class="card-box">
       <h2>📦 รายการสินค้าคงเหลือ</h2>
       <div id="productList" class="product-grid">
@@ -115,11 +123,28 @@
   </div>
 </div>
 
-<!-- 🖨️ โครงสร้างสำหรับพิมพ์บาร์โค้ดสติ๊กเกอร์ (57x33 mm) -->
+<!-- Modal Popup ถามการพิมพ์บาร์โค้ด -->
+<div id="barcodeModal" class="modal-overlay">
+  <div class="modal-content">
+    <h3>✅ บันทึกสินค้าสำเร็จ!</h3>
+    <p>รหัสบาร์โค้ด: <b id="modalBarcodeText" style="font-size: 1.2rem; color: #27ae60;">-</b></p>
+    <p style="margin-top: -5px; font-size: 0.9rem; color: #666;">ล็อตสินค้า: <span id="modalLotText">-</span></p>
+    <div style="margin: 15px 0;">
+      <svg id="modalBarcodeCanvas"></svg>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-warning" onclick="triggerPrintFromModal()">🖨️ พิมพ์บาร์โค้ดสติ๊กเกอร์</button>
+      <button class="btn btn-secondary" onclick="closeModal()">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+</div>
+
+<!-- โครงสร้างพิมพ์สติ๊กเกอร์ (57x33 mm) -->
 <div id="printArea" class="print-only">
   <div class="label-box">
     <div class="label-title" id="printBrand">BRAND</div>
     <div class="label-name" id="printName">PRODUCT NAME</div>
+    <div class="label-lot" id="printLot">LOT: -</div>
     <svg id="barcodeCanvas"></svg>
   </div>
 </div>
