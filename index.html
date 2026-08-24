@@ -32,21 +32,47 @@
 
     <div style="margin-bottom: 15px;">
       <button class="btn btn-primary btn-block" onclick="toggleAddForm()">
-        ➕ เพิ่มรายการสินค้าใหม่
+        ➕ เพิ่มรายการสินค้าใหม่ (คลิกเปิด/ปิด)
       </button>
     </div>
 
+    <!-- ฟอร์มเพิ่มสินค้า -->
     <div class="card-box" id="addProductFormCard" style="display: none;">
       <h2>➕ เพิ่มสินค้าเข้าสต็อก</h2>
       <form id="productForm" onsubmit="handleAddProduct(event)">
         <div class="form-row">
           <div class="form-group">
             <label>ยี่ห้อ (Brand)</label>
-            <input type="text" id="brand" placeholder="เช่น SmartHeart" required>
+            <input type="text" id="brand" placeholder="เช่น SmartHeart" required list="brandSuggestions">
+            <datalist id="brandSuggestions"></datalist>
           </div>
           <div class="form-group">
             <label>ชื่อสูตร/สินค้า</label>
-            <input type="text" id="name" placeholder="เช่น อาหารสุนัข" required>
+            <input type="text" id="name" placeholder="เช่น อาหารสุนัขโต" required list="nameSuggestions">
+            <datalist id="nameSuggestions"></datalist>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>💰 ราคาทุน (บาท)</label>
+            <input type="number" step="any" id="costPrice" placeholder="0.00" oninput="calculateSellingPrice()" required>
+          </div>
+          <div class="form-group">
+            <label>📈 บวกกำไร (%)</label>
+            <select id="profitMargin" onchange="calculateSellingPrice()">
+              <option value="40">40%</option>
+              <option value="50">50%</option>
+              <option value="60" selected>60%</option>
+              <option value="70">70%</option>
+              <option value="80">80%</option>
+              <option value="90">90%</option>
+              <option value="100">100%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>🏷️ ราคาขายตั้งต้น</label>
+            <input type="number" step="any" id="sellingPrice" placeholder="0.00" readonly style="background: #f0f0f0; font-weight: bold; color: #27ae60;">
           </div>
         </div>
 
@@ -56,7 +82,7 @@
             <input type="text" id="lotNo" placeholder="เช่น LOT-20260801" required>
           </div>
           <div class="form-group">
-            <label>จำนวนสต็อก (ถุง)</label>
+            <label>จำนวนสต็อก (ถุง/ชิ้น)</label>
             <input type="number" id="stock" placeholder="0" required>
           </div>
         </div>
@@ -64,16 +90,15 @@
         <div class="form-row">
           <div class="form-group">
             <label>📅 วันที่รับเข้า</label>
-            <input type="date" id="importDate" required onchange="autoCalcExpiry()">
+            <input type="date" id="importDate" required>
           </div>
           <div class="form-group">
             <label>⚠️ วันที่หมดอายุ (EXP)</label>
             <input type="date" id="expiryDate" required>
-            <!-- ปุ่มทางลัดเลือกวันหมดอายุ -->
             <div class="quick-exp-btns">
-              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(3)">+3 เดือน</button>
-              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(6)">+6 เดือน</button>
-              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(12)">+1 ปี</button>
+              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(3)">+3M</button>
+              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(6)">+6M</button>
+              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(12)">+1Y</button>
             </div>
           </div>
         </div>
@@ -95,7 +120,7 @@
 
         <div class="form-group" style="margin-bottom: 15px;">
           <label>📸 รูปสินค้า</label>
-          <input type="file" id="productImage" accept="image/*" capture="environment" onchange="previewImage(event)">
+          <input type="file" id="productImage" accept="image/*" onchange="previewImage(event)">
           <div id="imagePreviewContainer" style="margin-top: 10px; display: none;">
             <img id="imagePreview" src="" alt="Preview" style="max-width: 100px; border-radius: 8px;">
           </div>
@@ -105,8 +130,24 @@
       </form>
     </div>
 
+    <!-- ส่วนค้นหา & กรองยี่ห้อ -->
+    <div class="card-box" style="padding: 12px;">
+      <div class="form-row" style="margin-bottom: 0;">
+        <div class="form-group">
+          <label>🔍 ค้นหาตามชื่อสินค้า</label>
+          <input type="text" id="searchKeyword" placeholder="พิมพ์ชื่อสินค้า..." oninput="filterProducts()">
+        </div>
+        <div class="form-group">
+          <label>🏷️ กรองตามยี่ห้อ</label>
+          <select id="filterBrandSelect" onchange="filterProducts()">
+            <option value="">ทั้งหมด (All Brands)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
     <div class="card-box">
-      <h2>📦 รายการสินค้าคงเหลือ</h2>
+      <h2>📦 รายการสินค้าคงเหลือ (จัดกลุ่มตามยี่ห้อ/ชื่อ)</h2>
       <div id="productList" class="product-grid">
         <div class="empty-state">กำลังโหลดข้อมูล...</div>
       </div>
@@ -116,7 +157,7 @@
   <div id="database-tab" class="tab-content">
     <div class="card-box">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-        <h2>📊 ตาราง Database</h2>
+        <h2>📊 ตาราง Database (แยกทุกรายการ)</h2>
         <button class="btn btn-secondary" onclick="fetchDatabaseTable()">🔄 รีเฟรช</button>
       </div>
 
@@ -133,18 +174,41 @@
 <!-- Modal แก้ไขสินค้า -->
 <div id="editModal" class="modal-overlay main-ui">
   <div class="modal-content">
-    <h3>✏️ แก้ไขรายละเอียดสินค้า</h3>
+    <h3>✏️ แก้ไขรายการสินค้า (เฉพาะล็อตนี้)</h3>
     <form id="editForm" onsubmit="handleUpdateProduct(event)" style="margin-top: 15px;">
       <input type="hidden" id="editId">
       
       <div class="form-row">
         <div class="form-group">
           <label>ยี่ห้อ (Brand)</label>
-          <input type="text" id="editBrand" required>
+          <input type="text" id="editBrand" required list="brandSuggestions">
         </div>
         <div class="form-group">
           <label>ชื่อสูตร/สินค้า</label>
-          <input type="text" id="editName" required>
+          <input type="text" id="editName" required list="nameSuggestions">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>💰 ราคาทุน</label>
+          <input type="number" step="any" id="editCostPrice" oninput="calculateSellingPrice(true)">
+        </div>
+        <div class="form-group">
+          <label>📈 บวกกำไร (%)</label>
+          <select id="editProfitMargin" onchange="calculateSellingPrice(true)">
+            <option value="40">40%</option>
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+            <option value="70">70%</option>
+            <option value="80">80%</option>
+            <option value="90">90%</option>
+            <option value="100">100%</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>🏷️ ราคาขาย</label>
+          <input type="number" step="any" id="editSellingPrice" readonly style="background: #f0f0f0; font-weight: bold; color: #27ae60;">
         </div>
       </div>
 
@@ -154,7 +218,7 @@
           <input type="text" id="editLotNo" required>
         </div>
         <div class="form-group">
-          <label>จำนวนสต็อก (ถุง)</label>
+          <label>จำนวนสต็อก</label>
           <input type="number" id="editStock" required>
         </div>
       </div>

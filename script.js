@@ -1,5 +1,5 @@
 const API_URL = 'https://magma-market-api.onrender.com/api';
-let dbColumns = ['id', 'barcode', 'lotNo', 'brand', 'name', 'importDate', 'expiryDate', 'size', 'stock'];
+let dbColumns = ['id', 'barcode', 'lotNo', 'brand', 'name', 'costPrice', 'profitMargin', 'sellingPrice', 'importDate', 'expiryDate', 'size', 'stock'];
 let html5QrCode = null;
 let currentImageData = '';
 let lastSavedProduct = null;
@@ -40,7 +40,22 @@ function previewImage(event) {
   }
 }
 
-// ฟังก์ชันเพิ่มวันหมดอายุทางลัด (+3, +6, +12 เดือน)
+function calculateSellingPrice(isEdit = false) {
+  const costId = isEdit ? 'editCostPrice' : 'costPrice';
+  const marginId = isEdit ? 'editProfitMargin' : 'profitMargin';
+  const sellingId = isEdit ? 'editSellingPrice' : 'sellingPrice';
+
+  const cost = parseFloat(document.getElementById(costId).value) || 0;
+  const margin = parseFloat(document.getElementById(marginId).value) || 0;
+
+  if (cost > 0) {
+    const sellingPrice = cost + (cost * (margin / 100));
+    document.getElementById(sellingId).value = sellingPrice.toFixed(2);
+  } else {
+    document.getElementById(sellingId).value = '';
+  }
+}
+
 function addMonthsToExpiry(months, isEdit = false) {
   const importInputId = isEdit ? 'editImportDate' : 'importDate';
   const expiryInputId = isEdit ? 'editExpiryDate' : 'expiryDate';
@@ -64,7 +79,7 @@ function getExpiryStatus(expiryDateString) {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) {
-    return { text: `หมดอายุแล้ว! (${Math.abs(diffDays)} วัน)`, color: '#e74c3c' };
+    return { text: `หมดอายุ (${Math.abs(diffDays)} วัน)`, color: '#e74c3c' };
   } else if (diffDays <= 30) {
     return { text: `ใกล้หมดอายุ (${diffDays} วัน)`, color: '#e67e22' };
   } else {
@@ -76,50 +91,109 @@ async function fetchProducts() {
   try {
     const res = await fetch(`${API_URL}/products`);
     productsCache = await res.json();
-    renderProducts(productsCache);
+    populateSuggestions(productsCache);
+    filterProducts();
   } catch (err) {
     console.error(err);
   }
 }
 
-function renderProducts(products) {
+function populateSuggestions(products) {
+  const brands = [...new Set(products.map(p => p.brand).filter(Boolean))];
+  const brandDatalist = document.getElementById('brandSuggestions');
+  if (brandDatalist) {
+    brandDatalist.innerHTML = brands.map(b => `<option value="${b}">`).join('');
+  }
+
+  const select = document.getElementById('filterBrandSelect');
+  if (select) {
+    const currentVal = select.value;
+    select.innerHTML = `<option value="">ทั้งหมด (All Brands)</option>` + 
+      brands.map(b => `<option value="${b}" ${b === currentVal ? 'selected' : ''}>${b}</option>`).join('');
+  }
+
+  const names = [...new Set(products.map(p => p.name).filter(Boolean))];
+  const nameDatalist = document.getElementById('nameSuggestions');
+  if (nameDatalist) {
+    nameDatalist.innerHTML = names.map(n => `<option value="${n}">`).join('');
+  }
+}
+
+function filterProducts() {
+  const keyword = document.getElementById('searchKeyword').value.toLowerCase();
+  const selectedBrand = document.getElementById('filterBrandSelect').value;
+
+  const filtered = productsCache.filter(item => {
+    const matchName = (item.name || '').toLowerCase().includes(keyword) || (item.brand || '').toLowerCase().includes(keyword);
+    const matchBrand = selectedBrand ? item.brand === selectedBrand : true;
+    return matchName && matchBrand;
+  });
+
+  renderGroupedProducts(filtered);
+}
+
+function renderGroupedProducts(products) {
   const container = document.getElementById('productList');
   if (!container) return;
 
   if (!products || products.length === 0) {
-    container.innerHTML = '<div class="empty-state">ยังไม่มีรายการสินค้าในระบบ</div>';
+    container.innerHTML = '<div class="empty-state">ไม่พบรายการสินค้า</div>';
     return;
   }
 
-  container.innerHTML = products.map(item => {
-    const expStatus = getExpiryStatus(item.expiryDate);
+  const groups = {};
+  products.forEach(item => {
+    const key = `${(item.brand || 'ไม่ระบุ').trim()}_${(item.name || 'ไม่ระบุ').trim()}`;
+    if (!groups[key]) {
+      groups[key] = {
+        brand: item.brand,
+        name: item.name,
+        size: item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit}` : ''),
+        image: item.image,
+        totalStock: 0,
+        lots: []
+      };
+    }
+    groups[key].totalStock += Number(item.stock || 0);
+    groups[key].lots.push(item);
+  });
 
+  container.innerHTML = Object.values(groups).map(group => {
     return `
-      <div class="product-card" id="product-card-${item.id}">
-        ${item.image ? `<img src="${item.image}" class="product-img" alt="Product">` : ''}
+      <div class="product-card">
+        ${group.image ? `<img src="${group.image}" class="product-img" alt="Product">` : ''}
         <div class="product-info">
-          <h3>${item.brand || 'ไม่ระบุยี่ห้อ'}</h3>
-          <p><strong>ชื่อ:</strong> ${item.name || 'ไม่ระบุ'}</p>
-          <p><strong>ล็อตสินค้า:</strong> <span style="color: #d35400; font-weight: bold;">${item.lotNo || '-'}</span></p>
-          <p><strong>บาร์โค้ด:</strong> <code>${item.barcode || '-'}</code></p>
-          
-          <div class="exp-box">
-            <p><strong>รับเข้า:</strong> ${item.importDate || 'ไม่ระบุ'}</p>
-            <p><strong>หมดอายุ:</strong> ${item.expiryDate || 'ไม่ระบุ'}</p>
-            <p style="font-weight: bold; color: ${expStatus.color}; margin-top: 4px;">
-              ⏳ ${expStatus.text}
-            </p>
+          <h3>${group.brand || 'ไม่ระบุยี่ห้อ'}</h3>
+          <p style="font-size: 1rem; color: #2c3e50; font-weight: bold;">${group.name}</p>
+          <p><strong>ขนาด:</strong> ${group.size || 'ไม่ระบุ'}</p>
+          <p style="margin-top: 5px;"><strong>สต็อกรวมทุกล็อต:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${group.totalStock}</b> ถุง</p>
+
+          <div class="lots-wrapper">
+            <h4 style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 6px;">📦 รายการแยกตามล็อต (${group.lots.length} ล็อต):</h4>
+            ${group.lots.map(lot => {
+              const expStatus = getExpiryStatus(lot.expiryDate);
+              return `
+                <div class="lot-item">
+                  <div class="lot-header">
+                    <span>🏷️ <b>${lot.lotNo || 'ไม่ระบุล็อต'}</b> (รหัส: <code>${lot.barcode}</code>)</span>
+                    <span class="stock-badge">คงเหลือ ${lot.stock}</span>
+                  </div>
+                  
+                  <div class="lot-details">
+                    <p>💰 ทุน: ${lot.costPrice || '-'} | ขาย: <b style="color:#27ae60">${lot.sellingPrice || '-'} ฿</b> (${lot.profitMargin || 60}%)</p>
+                    <p>📅 EXP: ${lot.expiryDate || '-'} <span style="color:${expStatus.color}; font-weight:bold;">(${expStatus.text})</span></p>
+                  </div>
+
+                  <div class="lot-actions">
+                    <button class="btn-action btn-edit" onclick="openEditModal('${lot.id}')">✏️ แก้ไข</button>
+                    <button class="btn-action btn-print" onclick="printBarcode('${lot.brand}', '${lot.name}', '${lot.barcode}', '${lot.lotNo}')">🖨️ พิมพ์</button>
+                    <button class="btn-action btn-stock" onclick="reduceStock('${lot.id}', ${lot.stock})">➖ ตัดสต็อก</button>
+                    <button class="btn-action btn-delete" onclick="deleteProduct('${lot.id}')">🗑️ ลบ</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
-
-          <p><strong>ขนาด:</strong> ${item.size || (item.volumeValue ? item.volumeValue + ' ' + item.volumeUnit : 'ไม่ได้ระบุ')}</p>
-          <p><strong>คงเหลือ:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${item.stock ?? 0}</b> ถุง</p>
-        </div>
-
-        <div class="card-actions">
-          <button class="btn-action btn-edit" onclick="openEditModal('${item.id}')">✏️ แก้ไข</button>
-          <button class="btn-action btn-print" onclick="printBarcode('${item.brand}', '${item.name}', '${item.barcode}', '${item.lotNo}')">🖨️ พิมพ์</button>
-          <button class="btn-action btn-stock" onclick="reduceStock('${item.id}', ${item.stock})">➖ ตัดสต็อก</button>
-          <button class="btn-action btn-delete" onclick="deleteProduct('${item.id}')">🗑️ ลบ</button>
         </div>
       </div>
     `;
@@ -133,6 +207,9 @@ function openEditModal(id) {
   document.getElementById('editId').value = item.id;
   document.getElementById('editBrand').value = item.brand || '';
   document.getElementById('editName').value = item.name || '';
+  document.getElementById('editCostPrice').value = item.costPrice || '';
+  document.getElementById('editProfitMargin').value = item.profitMargin || 60;
+  document.getElementById('editSellingPrice').value = item.sellingPrice || '';
   document.getElementById('editLotNo').value = item.lotNo || '';
   document.getElementById('editStock').value = item.stock ?? 0;
   document.getElementById('editImportDate').value = item.importDate || '';
@@ -153,6 +230,9 @@ async function handleUpdateProduct(event) {
   const updateData = {
     brand: document.getElementById('editBrand').value,
     name: document.getElementById('editName').value,
+    costPrice: Number(document.getElementById('editCostPrice').value),
+    profitMargin: Number(document.getElementById('editProfitMargin').value),
+    sellingPrice: Number(document.getElementById('editSellingPrice').value),
     lotNo: document.getElementById('editLotNo').value,
     stock: Number(document.getElementById('editStock').value),
     importDate: document.getElementById('editImportDate').value,
@@ -186,9 +266,12 @@ async function handleAddProduct(event) {
     lotNo: document.getElementById('lotNo').value,
     brand: document.getElementById('brand').value,
     name: document.getElementById('name').value,
+    costPrice: Number(document.getElementById('costPrice').value),
+    profitMargin: Number(document.getElementById('profitMargin').value),
+    sellingPrice: Number(document.getElementById('sellingPrice').value),
     volumeValue: document.getElementById('volumeValue').value,
     volumeUnit: document.getElementById('volumeUnit').value,
-    stock: document.getElementById('stock').value,
+    stock: Number(document.getElementById('stock').value),
     importDate: document.getElementById('importDate').value,
     expiryDate: document.getElementById('expiryDate').value,
     image: currentImageData
@@ -337,9 +420,9 @@ async function onScanSuccess(decodedText) {
     if (item) {
       if (item.stock > 0) {
         await reduceStock(item.id, item.stock);
-        alert(`🎯 ตัดสต็อกเรียบร้อย: ${item.name}`);
+        alert(`🎯 ตัดสต็อกเรียบร้อย: ${item.name} (Lot: ${item.lotNo || '-'})`);
       } else {
-        alert(`⚠️ สินค้าหมดสต็อกแล้ว!`);
+        alert(`⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!`);
       }
     } else {
       alert(`❌ ไม่พบรหัสบาร์โค้ด: ${decodedText}`);
@@ -398,7 +481,7 @@ async function reduceStock(id, currentStock) {
 }
 
 async function deleteProduct(id) {
-  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  if (!confirm('ยืนยันการลบรายการล็อตนี้?')) return;
   try {
     const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
     const result = await res.json();
