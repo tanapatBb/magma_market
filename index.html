@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Magma Market - Portal Management</title>
   <link rel="stylesheet" href="style.css">
+  <!-- 📌 โหลดไลบรารีสำหรับ Gen Barcode และ Scan Barcode -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 
@@ -19,6 +22,18 @@
 
   <!-- TAB 1: คลังสินค้า หลัก -->
   <div id="stock-tab" class="tab-content active">
+    
+    <!-- 📷 ปุ่มสแกนเพื่อตัดสต็อก (ด้านบนสุด) -->
+    <div class="card-box" style="background: #eef7fe; border: 2px dashed #3498db; text-align: center;">
+      <button class="btn btn-secondary" onclick="toggleScanner()" style="font-size: 1.1rem; width: 100%;">
+        📷 สแกนบาร์โค้ดเพื่อตัดสต็อก (-1)
+      </button>
+      <div id="reader-container" style="display: none; margin-top: 15px;">
+        <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+        <button class="btn btn-delete" onclick="stopScanner()" style="margin-top: 10px;">❌ ปิดกล้องสแกน</button>
+      </div>
+    </div>
+
     <!-- ฟอร์มเพิ่มสินค้าเข้าสต็อก -->
     <div class="card-box">
       <h2>➕ เพิ่มสินค้าเข้าสต็อก</h2>
@@ -53,7 +68,20 @@
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">➕ บันทึกเพิ่มสต็อก</button>
+        <!-- 📸 ฟิลด์ถ่ายรูปสินค้า -->
+        <div class="form-group">
+          <label>📸 ถ่ายรูป/เลือกรูปสินค้า</label>
+          <input type="file" id="productImage" accept="image/*" capture="environment" onchange="previewImage(event)">
+          <div id="imagePreviewContainer" style="margin-top: 10px; display: none;">
+            <img id="imagePreview" src="" alt="Preview" style="max-width: 120px; border-radius: 8px; border: 1px solid #ccc;">
+          </div>
+        </div>
+
+        <!-- ปุ่มปฏิบัติการ -->
+        <div class="form-row" style="margin-top: 15px;">
+          <button type="submit" class="btn btn-primary">➕ บันทึกเพิ่มสต็อก</button>
+          <button type="button" class="btn btn-warning" onclick="generateBarcodePreview()">🏷️ Gen บาร์โค้ดตัวอย่าง</button>
+        </div>
       </form>
     </div>
 
@@ -66,7 +94,7 @@
     </div>
   </div>
 
-  <!-- TAB 2: จัดการตาราง/โครงสร้าง Database -->
+  <!-- TAB 2: จัดการ Database -->
   <div id="database-tab" class="tab-content">
     <div class="card-box">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -79,15 +107,20 @@
 
       <div style="overflow-x: auto;">
         <table class="db-table" id="dbMainTable">
-          <thead id="dbTableHeader">
-            <!-- Header จะถูกสร้างไดนามิกผ่าน JS -->
-          </thead>
-          <tbody id="dbTableBody">
-            <!-- Data Rows จะถูกสร้างผ่าน JS -->
-          </tbody>
+          <thead id="dbTableHeader"></thead>
+          <tbody id="dbTableBody"></tbody>
         </table>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- 🖨️ โครงสร้างสำหรับพิมพ์บาร์โค้ดสติ๊กเกอร์ (57x33 mm) -->
+<div id="printArea" class="print-only">
+  <div class="label-box">
+    <div class="label-title" id="printBrand">BRAND</div>
+    <div class="label-name" id="printName">PRODUCT NAME</div>
+    <svg id="barcodeCanvas"></svg>
   </div>
 </div>
 

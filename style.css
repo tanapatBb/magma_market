@@ -45,13 +45,8 @@ h1 {
   color: white;
 }
 
-.tab-content {
-  display: none;
-}
-
-.tab-content.active {
-  display: block;
-}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
 .card-box {
   background: white;
@@ -69,15 +64,8 @@ h2 {
   padding-bottom: 8px;
 }
 
-.form-group {
-  margin-bottom: 15px;
-}
-
-label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; font-weight: bold; }
 
 input, select {
   width: 100%;
@@ -87,14 +75,8 @@ input, select {
   font-size: 14px;
 }
 
-.form-row {
-  display: flex;
-  gap: 10px;
-}
-
-.form-row .form-group {
-  flex: 1;
-}
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
 
 .btn {
   padding: 10px 20px;
@@ -106,8 +88,8 @@ input, select {
 }
 
 .btn-primary { background: #2ecc71; color: white; width: 100%; }
-.btn-primary:hover { background: #27ae60; }
 .btn-secondary { background: #3498db; color: white; }
+.btn-warning { background: #f39c12; color: white; width: 100%; }
 
 .btn-sm {
   padding: 4px 8px;
@@ -118,11 +100,12 @@ input, select {
 }
 
 .btn-stock { background: #e67e22; color: white; margin-right: 5px; }
+.btn-print { background: #8e44ad; color: white; margin-right: 5px; }
 .btn-delete { background: #e74c3c; color: white; }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 15px;
   margin-top: 15px;
 }
@@ -132,33 +115,19 @@ input, select {
   border: 1px solid #e1e8ed;
   border-radius: 8px;
   padding: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
-.product-card h3 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-  font-size: 1.1rem;
+.product-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 10px;
 }
 
-.product-info p {
-  margin: 4px 0;
-  font-size: 0.9rem;
-  color: #555;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 30px;
-  color: #888;
-  font-size: 1.1rem;
-  grid-column: 1 / -1;
-}
-
-/* 📊 Database Table Styles */
 .db-table {
   width: 100%;
   border-collapse: collapse;
@@ -166,27 +135,39 @@ input, select {
   font-size: 0.9rem;
 }
 
-.db-table th {
-  background-color: #34495e;
-  color: white;
-  padding: 10px;
-  text-align: left;
-  white-space: nowrap;
-}
+.db-table th { background-color: #34495e; color: white; padding: 10px; text-align: left; }
+.db-table td { border: 1px solid #e1e8ed; padding: 8px 10px; }
 
-.db-table td {
-  border: 1px solid #e1e8ed;
-  padding: 8px 10px;
-  white-space: nowrap;
-}
+/* 🖨️ CSS สำหรับสั่งพิมพ์สติ๊กเกอร์ขนาด 57mm x 33mm */
+.print-only { display: none; }
 
-.db-table tr:nth-child(even) {
-  background-color: #f8f9fa;
-}
-
-.col-header-action {
-  font-size: 0.75rem;
-  margin-left: 5px;
-  color: #f1c40f;
-  cursor: pointer;
+@media print {
+  body * { visibility: hidden; }
+  .print-only, .print-only * { visibility: visible; }
+  .print-only {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 57mm;
+    height: 33mm;
+  }
+  @page {
+    size: 57mm 33mm;
+    margin: 0;
+  }
+  .label-box {
+    width: 57mm;
+    height: 33mm;
+    padding: 2mm;
+    text-align: center;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .label-title { font-size: 10pt; font-weight: bold; margin-bottom: 1mm; }
+  .label-name { font-size: 8pt; margin-bottom: 1mm; }
+  #barcodeCanvas { max-width: 50mm; height: 16mm; }
 }
