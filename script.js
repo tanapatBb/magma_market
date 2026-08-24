@@ -4,6 +4,7 @@ let html5QrCode = null;
 let currentImageData = '';
 let lastSavedProduct = null;
 let productsCache = [];
+let myChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchProducts();
@@ -17,9 +18,12 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
-  event.currentTarget.classList.add('active');
+  
+  const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+  if (activeBtn) activeBtn.classList.add('active');
 
   if (tabId === 'database-tab') fetchDatabaseTable();
+  if (tabId === 'dashboard-tab') renderDashboard();
 }
 
 function toggleAddForm() {
@@ -68,7 +72,7 @@ function addMonthsToExpiry(months, isEdit = false) {
 }
 
 function getExpiryStatus(expiryDateString) {
-  if (!expiryDateString) return { text: 'ไม่ระบุ', color: '#7f8c8d' };
+  if (!expiryDateString || expiryDateString === '-') return { text: 'ไม่ระบุ', color: '#7f8c8d' };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -77,6 +81,8 @@ function getExpiryStatus(expiryDateString) {
 
   const diffTime = expiryDate - today;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (isNaN(diffDays)) return { text: 'ไม่ระบุ', color: '#7f8c8d' };
 
   if (diffDays < 0) {
     return { text: `หมดอายุ (${Math.abs(diffDays)} วัน)`, color: '#e74c3c' };
@@ -148,8 +154,8 @@ function renderGroupedProducts(products) {
       groups[key] = {
         brand: item.brand,
         name: item.name,
-        size: item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit}` : ''),
-        image: item.image,
+        size: item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit || ''}` : ''),
+        image: item.image || item.img || item.photo || '',
         totalStock: 0,
         lots: []
       };
@@ -166,22 +172,29 @@ function renderGroupedProducts(products) {
           <h3>${group.brand || 'ไม่ระบุยี่ห้อ'}</h3>
           <p style="font-size: 1rem; color: #2c3e50; font-weight: bold;">${group.name}</p>
           <p><strong>ขนาด:</strong> ${group.size || 'ไม่ระบุ'}</p>
-          <p style="margin-top: 5px;"><strong>สต็อกรวมทุกล็อต:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${group.totalStock}</b> ถุง</p>
+          <p style="margin-top: 5px;"><strong>สต็อกรวมทุกล็อต:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${group.totalStock}</b> ถุง/ชิ้น</p>
 
           <div class="lots-wrapper">
             <h4 style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 6px;">📦 รายการแยกตามล็อต (${group.lots.length} ล็อต):</h4>
             ${group.lots.map(lot => {
-              const expStatus = getExpiryStatus(lot.expiryDate);
+              // Fallback Key จาก DB ทั้ง CamelCase และ snake_case
+              const cost = lot.costPrice ?? lot.cost_price ?? lot.cost ?? null;
+              const selling = lot.sellingPrice ?? lot.selling_price ?? lot.price ?? null;
+              const margin = lot.profitMargin ?? lot.profit_margin ?? 60;
+              const expDate = lot.expiryDate || lot.expiry_date || lot.exp || '-';
+
+              const expStatus = getExpiryStatus(expDate);
+
               return `
                 <div class="lot-item">
                   <div class="lot-header">
-                    <span>🏷️ <b>${lot.lotNo || 'ไม่ระบุล็อต'}</b> (รหัส: <code>${lot.barcode}</code>)</span>
+                    <span>🏷️ <b>${lot.lotNo || lot.lot_no || 'ไม่ระบุล็อต'}</b> (รหัส: <code>${lot.barcode}</code>)</span>
                     <span class="stock-badge">คงเหลือ ${lot.stock}</span>
                   </div>
                   
                   <div class="lot-details">
-                    <p>💰 ทุน: ${lot.costPrice || '-'} | ขาย: <b style="color:#27ae60">${lot.sellingPrice || '-'} ฿</b> (${lot.profitMargin || 60}%)</p>
-                    <p>📅 EXP: ${lot.expiryDate || '-'} <span style="color:${expStatus.color}; font-weight:bold;">(${expStatus.text})</span></p>
+                    <p>💰 ทุน: <b>${cost !== null ? cost + ' ฿' : '-'}</b> | ขาย: <b style="color:#27ae60">${selling !== null ? selling + ' ฿' : '-'}</b> (${margin}%)</p>
+                    <p>📅 EXP: ${expDate} <span style="color:${expStatus.color}; font-weight:bold;">(${expStatus.text})</span></p>
                   </div>
 
                   <div class="lot-actions">
@@ -200,6 +213,67 @@ function renderGroupedProducts(products) {
   }).join('');
 }
 
+function renderDashboard() {
+  let totalCost = 0;
+  let totalSelling = 0;
+  const summaryMap = {};
+
+  productsCache.forEach(item => {
+    const cost = Number(item.costPrice ?? item.cost_price ?? item.cost ?? 0);
+    const selling = Number(item.sellingPrice ?? item.selling_price ?? item.price ?? 0);
+    const stock = Number(item.stock || 0);
+
+    totalCost += cost * stock;
+    totalSelling += selling * stock;
+
+    const key = `${item.brand || ''} ${item.name || ''}`.trim();
+    if (!summaryMap[key]) {
+      summaryMap[key] = { stock: 0, costTotal: 0, sellingTotal: 0 };
+    }
+    summaryMap[key].stock += stock;
+    summaryMap[key].costTotal += cost * stock;
+    summaryMap[key].sellingTotal += selling * stock;
+  });
+
+  const profit = totalSelling - totalCost;
+
+  document.getElementById('totalCostVal').innerText = `${totalCost.toLocaleString('th-TH')} ฿`;
+  document.getElementById('totalSellingVal').innerText = `${totalSelling.toLocaleString('th-TH')} ฿`;
+  document.getElementById('totalProfitVal').innerText = `${profit.toLocaleString('th-TH')} ฿`;
+
+  // Render Chart
+  const ctx = document.getElementById('financialChart').getContext('2d');
+  if (myChart) myChart.destroy();
+
+  myChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['ราคาทุนรวม', 'กำไรคาดการณ์'],
+      datasets: [{
+        data: [totalCost, profit > 0 ? profit : 0],
+        backgroundColor: ['#3498db', '#2ecc71']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+
+  // Render Table
+  const tbody = document.getElementById('dashboardTableBody');
+  tbody.innerHTML = Object.keys(summaryMap).map(key => `
+    <tr>
+      <td><b>${key}</b></td>
+      <td style="text-align:center;">${summaryMap[key].stock}</td>
+      <td>${summaryMap[key].costTotal.toLocaleString()} ฿</td>
+      <td style="color:#27ae60; font-weight:bold;">${summaryMap[key].sellingTotal.toLocaleString()} ฿</td>
+    </tr>
+  `).join('');
+}
+
 function openEditModal(id) {
   const item = productsCache.find(p => String(p.id) === String(id));
   if (!item) return;
@@ -207,13 +281,13 @@ function openEditModal(id) {
   document.getElementById('editId').value = item.id;
   document.getElementById('editBrand').value = item.brand || '';
   document.getElementById('editName').value = item.name || '';
-  document.getElementById('editCostPrice').value = item.costPrice || '';
-  document.getElementById('editProfitMargin').value = item.profitMargin || 60;
-  document.getElementById('editSellingPrice').value = item.sellingPrice || '';
-  document.getElementById('editLotNo').value = item.lotNo || '';
+  document.getElementById('editCostPrice').value = item.costPrice ?? item.cost_price ?? '';
+  document.getElementById('editProfitMargin').value = item.profitMargin ?? item.profit_margin ?? 60;
+  document.getElementById('editSellingPrice').value = item.sellingPrice ?? item.selling_price ?? '';
+  document.getElementById('editLotNo').value = item.lotNo ?? item.lot_no ?? '';
   document.getElementById('editStock').value = item.stock ?? 0;
-  document.getElementById('editImportDate').value = item.importDate || '';
-  document.getElementById('editExpiryDate').value = item.expiryDate || '';
+  document.getElementById('editImportDate').value = item.importDate ?? item.import_date ?? '';
+  document.getElementById('editExpiryDate').value = item.expiryDate ?? item.expiry_date ?? '';
   document.getElementById('editSize').value = item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit}` : '');
 
   document.getElementById('editModal').style.display = 'flex';
@@ -287,7 +361,6 @@ async function handleAddProduct(event) {
     const result = await res.json();
     if (result.status === 'success') {
       lastSavedProduct = result.data;
-      
       document.getElementById('productForm').reset();
       
       const today = new Date().toISOString().split('T')[0];
@@ -376,21 +449,7 @@ async function toggleScanner() {
     };
 
     try {
-      await html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess
-      );
-
-      setTimeout(() => {
-        const scanRegion = document.getElementById('reader__scan_region');
-        if (scanRegion && !document.querySelector('.scanner-laser')) {
-          const laser = document.createElement('div');
-          laser.className = 'scanner-laser';
-          scanRegion.appendChild(laser);
-        }
-      }, 500);
-
+      await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
     } catch (err) {
       alert("❌ ไม่สามารถเปิดกล้องได้");
       stopScanner();
@@ -404,13 +463,9 @@ async function stopScanner() {
   if (html5QrCode && html5QrCode.isScanning) {
     await html5QrCode.stop();
   }
-  const laser = document.querySelector('.scanner-laser');
-  if (laser) laser.remove();
-
   document.getElementById('reader-container').style.display = 'none';
 }
 
-// สแกนบาร์โค้ด + ขึ้น Pop-up ยืนยัน
 async function onScanSuccess(decodedText) {
   stopScanner();
   try {
@@ -423,7 +478,6 @@ async function onScanSuccess(decodedText) {
         const productName = `${item.brand || ''} ${item.name || ''}`.trim();
         const lotText = item.lotNo ? ` (Lot: ${item.lotNo})` : '';
 
-        // แสดง Pop-up ยืนยันชื่อสินค้า
         const confirmCut = confirm(`🎯 สแกนพบสินค้า!\n\nต้องการตัดสต็อก (-1) ของ:\n${productName}${lotText}\n\nคงเหลือปัจจุบัน: ${item.stock} ชิ้น หรือไม่?`);
         
         if (confirmCut) {
@@ -441,7 +495,6 @@ async function onScanSuccess(decodedText) {
   }
 }
 
-// ฟังก์ชันช่วยตัดสต็อกหลังยืนยันจากหน้าสแกน
 async function reduceStockDirect(id, currentStock) {
   const res = await fetch(`${API_URL}/products/${id}`, {
     method: 'PUT',
@@ -485,7 +538,6 @@ async function fetchDatabaseTable() {
   }
 }
 
-// กดปุ่ม - ตัดสต็อกหน้าเว็บ + ขึ้น Pop-up ยืนยัน
 async function reduceStock(id, currentStock) {
   if (currentStock <= 0) return alert('⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!');
 
@@ -493,7 +545,6 @@ async function reduceStock(id, currentStock) {
   const productName = item ? `${item.brand || ''} ${item.name || ''}`.trim() : 'สินค้า';
   const lotText = item && item.lotNo ? ` (Lot: ${item.lotNo})` : '';
 
-  // แสดง Pop-up ยืนยันชื่อสินค้า
   const confirmCut = confirm(`❓ ยืนยันการตัดสต็อก (-1)\n\nสินค้า: ${productName}${lotText}\nคงเหลือปัจจุบัน: ${currentStock} ชิ้น`);
   if (!confirmCut) return;
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Magma Market - Portal Management</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
@@ -15,15 +16,14 @@
 
   <div class="tab-menu">
     <button class="tab-btn active" onclick="switchTab('stock-tab')">📦 คลังสินค้า</button>
+    <button class="tab-btn" onclick="switchTab('dashboard-tab')">📊 Dashboard</button>
     <button class="tab-btn" onclick="switchTab('database-tab')">⚙️ Database</button>
   </div>
 
+  <!-- TAB: STOCK -->
   <div id="stock-tab" class="tab-content active">
-    
     <div class="card-box scanner-card">
-      <button class="btn btn-secondary btn-block" onclick="toggleScanner()">
-        📷 สแกนบาร์โค้ดตัดสต็อก (-1)
-      </button>
+      <button class="btn btn-secondary btn-block" onclick="toggleScanner()">📷 สแกนบาร์โค้ดตัดสต็อก (-1)</button>
       <div id="reader-container" style="display: none; margin-top: 15px;">
         <div id="reader"></div>
         <button class="btn btn-delete btn-block" onclick="stopScanner()" style="margin-top: 10px;">❌ ปิดกล้อง</button>
@@ -31,12 +31,9 @@
     </div>
 
     <div style="margin-bottom: 15px;">
-      <button class="btn btn-primary btn-block" onclick="toggleAddForm()">
-        ➕ เพิ่มรายการสินค้าใหม่ (คลิกเปิด/ปิด)
-      </button>
+      <button class="btn btn-primary btn-block" onclick="toggleAddForm()">➕ เพิ่มรายการสินค้าใหม่ (คลิกเปิด/ปิด)</button>
     </div>
 
-    <!-- ฟอร์มเพิ่มสินค้า -->
     <div class="card-box" id="addProductFormCard" style="display: none;">
       <h2>➕ เพิ่มสินค้าเข้าสต็อก</h2>
       <form id="productForm" onsubmit="handleAddProduct(event)">
@@ -130,7 +127,6 @@
       </form>
     </div>
 
-    <!-- ส่วนค้นหา & กรองยี่ห้อ -->
     <div class="card-box" style="padding: 12px;">
       <div class="form-row" style="margin-bottom: 0;">
         <div class="form-group">
@@ -154,6 +150,53 @@
     </div>
   </div>
 
+  <!-- TAB: DASHBOARD (ใหม่) -->
+  <div id="dashboard-tab" class="tab-content">
+    <div class="card-box">
+      <h2>📈 สรุปภาพรวมมูลค่าสินค้า & การขาย</h2>
+      
+      <div class="dashboard-metrics">
+        <div class="metric-card bg-blue">
+          <span class="metric-title">มูลค่าทุนรวมคงเหลือ</span>
+          <span class="metric-value" id="totalCostVal">0 ฿</span>
+        </div>
+        <div class="metric-card bg-green">
+          <span class="metric-title">มูลค่าขายรวมคงเหลือ</span>
+          <span class="metric-value" id="totalSellingVal">0 ฿</span>
+        </div>
+        <div class="metric-card bg-orange">
+          <span class="metric-title">กำไรคาดการณ์</span>
+          <span class="metric-value" id="totalProfitVal">0 ฿</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; max-width: 320px; margin-left: auto; margin-right: auto;">
+        <h3 style="text-align: center; font-size: 0.95rem; color: #555; margin-bottom: 10px;">สัดส่วนราคาทุน vs มูลค่าราคาขาย</h3>
+        <canvas id="financialChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card-box">
+      <h2>🔥 สถานะสต็อกและสินค้าคงเหลือ</h2>
+      <div class="table-responsive">
+        <table class="db-table">
+          <thead>
+            <tr>
+              <th>ยี่ห้อ/ชื่อสินค้า</th>
+              <th>คงเหลือ (ชิ้น)</th>
+              <th>มูลค่าทุนรวม</th>
+              <th>มูลค่าขายรวม</th>
+            </tr>
+          </thead>
+          <tbody id="dashboardTableBody">
+            <tr><td colspan="4" style="text-align: center;">ไม่มีข้อมูล</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: DATABASE -->
   <div id="database-tab" class="tab-content">
     <div class="card-box">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
