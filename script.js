@@ -5,10 +5,11 @@ let lastSavedProduct = null;
 let productsCache = [];
 let myChart = null;
 
-// Helper Function ดึงค่า Key แบบรองรับทั้ง camelCase และ snake_case
+// Helper Function ดึงค่า Key แบบยืดหยุ่นสูงสุด ดักจับทุกรูปแบบชื่อฟิลด์
 function getValue(obj, ...keys) {
+  if (!obj) return null;
   for (const key of keys) {
-    if (obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
+    if (obj[key] !== undefined && obj[key] !== null && obj[key] !== '' && obj[key] !== 'null') {
       return obj[key];
     }
   }
@@ -151,24 +152,28 @@ function filterProducts() {
   renderGroupedProducts(filtered);
 }
 
+// แสดงผล Card สินค้า (กรองสินค้าสต็อก 0 ออก)
 function renderGroupedProducts(products) {
   const container = document.getElementById('productList');
   if (!container) return;
 
-  if (!products || products.length === 0) {
-    container.innerHTML = '<div class="empty-state">ไม่พบรายการสินค้า</div>';
+  // กรองเฉพาะรายการที่สต็อกมากกว่า 0 เท่านั้น
+  const activeProducts = products.filter(item => Number(item.stock || 0) > 0);
+
+  if (!activeProducts || activeProducts.length === 0) {
+    container.innerHTML = '<div class="empty-state">ไม่มีรายการสินค้าคงเหลือ (หมดสต็อก)</div>';
     return;
   }
 
   const groups = {};
-  products.forEach(item => {
+  activeProducts.forEach(item => {
     const key = `${(item.brand || 'ไม่ระบุ').trim()}_${(item.name || 'ไม่ระบุ').trim()}`;
     if (!groups[key]) {
       groups[key] = {
         brand: item.brand,
         name: item.name,
         size: item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit || ''}` : ''),
-        image: getValue(item, 'image', 'img', 'photo') || '',
+        image: getValue(item, 'image', 'img', 'photo', 'picture') || '',
         totalStock: 0,
         lots: []
       };
@@ -185,29 +190,30 @@ function renderGroupedProducts(products) {
           <h3>${group.brand || 'ไม่ระบุยี่ห้อ'}</h3>
           <p style="font-size: 1rem; color: #2c3e50; font-weight: bold;">${group.name}</p>
           <p><strong>ขนาด:</strong> ${group.size || 'ไม่ระบุ'}</p>
-          <p style="margin-top: 5px;"><strong>สต็อกรวมทุกล็อต:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${group.totalStock}</b> ถุง/ชิ้น</p>
+          <p style="margin-top: 5px;"><strong>สต็อกรวม:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${group.totalStock}</b> ชิ้น</p>
 
           <div class="lots-wrapper">
-            <h4 style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 6px;">📦 รายการแยกตามล็อต (${group.lots.length} ล็อต):</h4>
+            <h4 style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 6px;">📦 ล็อตที่มีสินค้า (${group.lots.length} ล็อต):</h4>
             ${group.lots.map(lot => {
-              const cost = getValue(lot, 'costPrice', 'cost_price', 'cost');
-              const selling = getValue(lot, 'sellingPrice', 'selling_price', 'price');
-              const margin = getValue(lot, 'profitMargin', 'profit_margin') || 60;
-              const expDate = getValue(lot, 'expiryDate', 'expiry_date', 'exp') || '-';
-              const lotNo = getValue(lot, 'lotNo', 'lot_no') || 'ไม่ระบุล็อต';
+              const cost = getValue(lot, 'costPrice', 'cost_price', 'cost', 'costprice');
+              const selling = getValue(lot, 'sellingPrice', 'selling_price', 'price', 'sellingprice');
+              const margin = getValue(lot, 'profitMargin', 'profit_margin', 'profit') || 60;
+              const expDate = getValue(lot, 'expiryDate', 'expiry_date', 'exp', 'expiry') || '-';
+              const importDate = getValue(lot, 'importDate', 'import_date', 'import') || '-';
+              const lotNo = getValue(lot, 'lotNo', 'lot_no', 'lot') || 'ไม่ระบุล็อต';
 
               const expStatus = getExpiryStatus(expDate);
 
               return `
                 <div class="lot-item">
                   <div class="lot-header">
-                    <span>🏷️ <b>${lotNo}</b> (รหัส: <code>${lot.barcode}</code>)</span>
+                    <span>🏷️ <b>${lotNo}</b> (บาร์โค้ด: <code>${lot.barcode}</code>)</span>
                     <span class="stock-badge">คงเหลือ ${lot.stock}</span>
                   </div>
                   
                   <div class="lot-details">
-                    <p>💰 ทุน: <b>${cost !== null ? cost + ' ฿' : '-'}</b> | ขาย: <b style="color:#27ae60">${selling !== null ? selling + ' ฿' : '-'}</b> (${margin}%)</p>
-                    <p>📅 EXP: ${expDate} <span style="color:${expStatus.color}; font-weight:bold;">(${expStatus.text})</span></p>
+                    <p>💰 ทุน: <b>${cost ? cost + ' ฿' : '-'}</b> | ขาย: <b style="color:#27ae60">${selling ? selling + ' ฿' : '-'}</b> (${margin}%)</p>
+                    <p>📅 รับเข้า: ${importDate} | EXP: ${expDate} <span style="color:${expStatus.color}; font-weight:bold;">(${expStatus.text})</span></p>
                   </div>
 
                   <div class="lot-actions">
@@ -232,8 +238,8 @@ function renderDashboard() {
   const summaryMap = {};
 
   productsCache.forEach(item => {
-    const cost = Number(getValue(item, 'costPrice', 'cost_price', 'cost') || 0);
-    const selling = Number(getValue(item, 'sellingPrice', 'selling_price', 'price') || 0);
+    const cost = Number(getValue(item, 'costPrice', 'cost_price', 'cost', 'costprice') || 0);
+    const selling = Number(getValue(item, 'sellingPrice', 'selling_price', 'price', 'sellingprice') || 0);
     const stock = Number(item.stock || 0);
 
     totalCost += cost * stock;
@@ -254,7 +260,6 @@ function renderDashboard() {
   document.getElementById('totalSellingVal').innerText = `${totalSelling.toLocaleString('th-TH')} ฿`;
   document.getElementById('totalProfitVal').innerText = `${profit.toLocaleString('th-TH')} ฿`;
 
-  // Render Chart
   const ctx = document.getElementById('financialChart').getContext('2d');
   if (myChart) myChart.destroy();
 
@@ -275,7 +280,6 @@ function renderDashboard() {
     }
   });
 
-  // Render Table
   const tbody = document.getElementById('dashboardTableBody');
   tbody.innerHTML = Object.keys(summaryMap).map(key => `
     <tr>
@@ -287,6 +291,7 @@ function renderDashboard() {
   `).join('');
 }
 
+// ตาราง Database ดึงค่าแบบ Fallback ลึกที่สุด
 async function fetchDatabaseTable() {
   try {
     const res = await fetch(`${API_URL}/products`);
@@ -309,14 +314,15 @@ async function fetchDatabaseTable() {
     body.innerHTML = products.map(row => {
       const id = row.id ?? '-';
       const barcode = row.barcode ?? '-';
-      const lotNo = getValue(row, 'lotNo', 'lot_no') || '-';
+      const lotNo = getValue(row, 'lotNo', 'lot_no', 'lot') || '-';
       const brand = row.brand ?? '-';
       const name = row.name ?? '-';
-      const costPrice = getValue(row, 'costPrice', 'cost_price', 'cost');
-      const profitMargin = getValue(row, 'profitMargin', 'profit_margin');
-      const sellingPrice = getValue(row, 'sellingPrice', 'selling_price', 'price');
-      const importDate = getValue(row, 'importDate', 'import_date') || '-';
-      const expiryDate = getValue(row, 'expiryDate', 'expiry_date', 'exp') || '-';
+
+      const costPrice = getValue(row, 'costPrice', 'cost_price', 'cost', 'costprice');
+      const profitMargin = getValue(row, 'profitMargin', 'profit_margin', 'profit');
+      const sellingPrice = getValue(row, 'sellingPrice', 'selling_price', 'price', 'sellingprice');
+      const importDate = getValue(row, 'importDate', 'import_date', 'import') || '-';
+      const expiryDate = getValue(row, 'expiryDate', 'expiry_date', 'exp', 'expiry') || '-';
       const size = row.size || (row.volumeValue ? `${row.volumeValue} ${row.volumeUnit || ''}` : '-');
       const stock = row.stock ?? 0;
 
@@ -327,9 +333,9 @@ async function fetchDatabaseTable() {
           <td>${lotNo}</td>
           <td><b>${brand}</b></td>
           <td>${name}</td>
-          <td>${costPrice !== null ? costPrice + ' ฿' : '-'}</td>
-          <td>${profitMargin !== null ? profitMargin + '%' : '-'}</td>
-          <td style="color:#27ae60; font-weight:bold;">${sellingPrice !== null ? sellingPrice + ' ฿' : '-'}</td>
+          <td>${costPrice ? costPrice + ' ฿' : '-'}</td>
+          <td>${profitMargin ? profitMargin + '%' : '-'}</td>
+          <td style="color:#27ae60; font-weight:bold;">${sellingPrice ? sellingPrice + ' ฿' : '-'}</td>
           <td>${importDate}</td>
           <td>${expiryDate}</td>
           <td>${size}</td>
@@ -356,13 +362,13 @@ function openEditModal(id) {
   document.getElementById('editId').value = item.id;
   document.getElementById('editBrand').value = item.brand || '';
   document.getElementById('editName').value = item.name || '';
-  document.getElementById('editCostPrice').value = getValue(item, 'costPrice', 'cost_price', 'cost') || '';
-  document.getElementById('editProfitMargin').value = getValue(item, 'profitMargin', 'profit_margin') || 60;
-  document.getElementById('editSellingPrice').value = getValue(item, 'sellingPrice', 'selling_price', 'price') || '';
-  document.getElementById('editLotNo').value = getValue(item, 'lotNo', 'lot_no') || '';
+  document.getElementById('editCostPrice').value = getValue(item, 'costPrice', 'cost_price', 'cost', 'costprice') || '';
+  document.getElementById('editProfitMargin').value = getValue(item, 'profitMargin', 'profit_margin', 'profit') || 60;
+  document.getElementById('editSellingPrice').value = getValue(item, 'sellingPrice', 'selling_price', 'price', 'sellingprice') || '';
+  document.getElementById('editLotNo').value = getValue(item, 'lotNo', 'lot_no', 'lot') || '';
   document.getElementById('editStock').value = item.stock ?? 0;
-  document.getElementById('editImportDate').value = getValue(item, 'importDate', 'import_date') || '';
-  document.getElementById('editExpiryDate').value = getValue(item, 'expiryDate', 'expiry_date', 'exp') || '';
+  document.getElementById('editImportDate').value = getValue(item, 'importDate', 'import_date', 'import') || '';
+  document.getElementById('editExpiryDate').value = getValue(item, 'expiryDate', 'expiry_date', 'exp', 'expiry') || '';
   document.getElementById('editSize').value = item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit || ''}` : '');
 
   document.getElementById('editModal').style.display = 'flex';
@@ -457,7 +463,7 @@ async function handleAddProduct(event) {
 
 function openBarcodeModal(product) {
   document.getElementById('modalBarcodeText').innerText = product.barcode;
-  document.getElementById('modalLotText').innerText = getValue(product, 'lotNo', 'lot_no') || '-';
+  document.getElementById('modalLotText').innerText = getValue(product, 'lotNo', 'lot_no', 'lot') || '-';
   JsBarcode("#modalBarcodeCanvas", product.barcode, {
     format: "CODE128",
     width: 2,
@@ -473,7 +479,7 @@ function closeModal() {
 
 function triggerPrintFromModal() {
   if (lastSavedProduct) {
-    printBarcode(lastSavedProduct.brand, lastSavedProduct.name, lastSavedProduct.barcode, getValue(lastSavedProduct, 'lotNo', 'lot_no'));
+    printBarcode(lastSavedProduct.brand, lastSavedProduct.name, lastSavedProduct.barcode, getValue(lastSavedProduct, 'lotNo', 'lot_no', 'lot'));
   }
 }
 
@@ -551,7 +557,7 @@ async function onScanSuccess(decodedText) {
     if (item) {
       if (item.stock > 0) {
         const productName = `${item.brand || ''} ${item.name || ''}`.trim();
-        const lotNo = getValue(item, 'lotNo', 'lot_no');
+        const lotNo = getValue(item, 'lotNo', 'lot_no', 'lot');
         const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
 
         const confirmCut = confirm(`🎯 สแกนพบสินค้า!\n\nต้องการตัดสต็อก (-1) ของ:\n${productName}${lotText}\n\nคงเหลือปัจจุบัน: ${item.stock} ชิ้น หรือไม่?`);
@@ -589,7 +595,7 @@ async function reduceStock(id, currentStock) {
 
   const item = productsCache.find(p => String(p.id) === String(id));
   const productName = item ? `${item.brand || ''} ${item.name || ''}`.trim() : 'สินค้า';
-  const lotNo = getValue(item, 'lotNo', 'lot_no');
+  const lotNo = getValue(item, 'lotNo', 'lot_no', 'lot');
   const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
 
   const confirmCut = confirm(`❓ ยืนยันการตัดสต็อก (-1)\n\nสินค้า: ${productName}${lotText}\nคงเหลือปัจจุบัน: ${currentStock} ชิ้น`);
