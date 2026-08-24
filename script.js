@@ -3,6 +3,7 @@ let dbColumns = ['id', 'barcode', 'lotNo', 'brand', 'name', 'importDate', 'expir
 let html5QrCode = null;
 let currentImageData = '';
 let lastSavedProduct = null;
+let productsCache = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchProducts();
@@ -62,8 +63,8 @@ function getExpiryStatus(expiryDateString) {
 async function fetchProducts() {
   try {
     const res = await fetch(`${API_URL}/products`);
-    const products = await res.json();
-    renderProducts(products);
+    productsCache = await res.json();
+    renderProducts(productsCache);
   } catch (err) {
     console.error(err);
   }
@@ -82,7 +83,7 @@ function renderProducts(products) {
     const expStatus = getExpiryStatus(item.expiryDate);
 
     return `
-      <div class="product-card" id="product-card-${item.id}">
+      <div class="product-card" id="product-card-${item.id}" onclick="openEditModal('${item.id}')">
         ${item.image ? `<img src="${item.image}" class="product-img" alt="Product">` : ''}
         <div class="product-info">
           <h3>${item.brand || 'ไม่ระบุยี่ห้อ'}</h3>
@@ -101,7 +102,8 @@ function renderProducts(products) {
           <p><strong>ขนาด:</strong> ${item.size || (item.volumeValue ? item.volumeValue + ' ' + item.volumeUnit : 'ไม่ได้ระบุ')}</p>
           <p><strong>คงเหลือ:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${item.stock ?? 0}</b> ถุง</p>
         </div>
-        <div style="margin-top: 15px; text-align: right;">
+        <div class="card-actions" onclick="event.stopPropagation()">
+          <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">✏️ แก้ไข</button>
           <button class="btn-sm btn-print" onclick="printBarcode('${item.brand}', '${item.name}', '${item.barcode}', '${item.lotNo}')">🖨️ พิมพ์</button>
           <button class="btn-sm btn-stock" onclick="reduceStock('${item.id}', ${item.stock})">➖ ตัดสต็อก</button>
           <button class="btn-sm btn-delete" onclick="deleteProduct('${item.id}')">🗑️ ลบ</button>
@@ -109,6 +111,57 @@ function renderProducts(products) {
       </div>
     `;
   }).join('');
+}
+
+function openEditModal(id) {
+  const item = productsCache.find(p => String(p.id) === String(id));
+  if (!item) return;
+
+  document.getElementById('editId').value = item.id;
+  document.getElementById('editBrand').value = item.brand || '';
+  document.getElementById('editName').value = item.name || '';
+  document.getElementById('editLotNo').value = item.lotNo || '';
+  document.getElementById('editStock').value = item.stock ?? 0;
+  document.getElementById('editImportDate').value = item.importDate || '';
+  document.getElementById('editExpiryDate').value = item.expiryDate || '';
+  document.getElementById('editSize').value = item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit}` : '');
+
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+
+async function handleUpdateProduct(event) {
+  event.preventDefault();
+  const id = document.getElementById('editId').value;
+
+  const updateData = {
+    brand: document.getElementById('editBrand').value,
+    name: document.getElementById('editName').value,
+    lotNo: document.getElementById('editLotNo').value,
+    stock: Number(document.getElementById('editStock').value),
+    importDate: document.getElementById('editImportDate').value,
+    expiryDate: document.getElementById('editExpiryDate').value,
+    size: document.getElementById('editSize').value
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData)
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+      closeEditModal();
+      fetchProducts();
+      fetchDatabaseTable();
+    }
+  } catch (err) {
+    alert('ไม่สามารถอัปเดตข้อมูลได้');
+  }
 }
 
 async function handleAddProduct(event) {
@@ -300,7 +353,10 @@ async function fetchDatabaseTable() {
     body.innerHTML = products.map(row => `
       <tr>
         ${dbColumns.map(col => `<td>${row[col] !== undefined && row[col] !== null ? row[col] : '-'}</td>`).join('')}
-        <td><button class="btn-sm btn-delete" onclick="deleteProduct('${row.id}')">🗑️ ลบถาวร</button></td>
+        <td>
+          <button class="btn-sm btn-edit" onclick="openEditModal('${row.id}')">✏️ แก้ไข</button>
+          <button class="btn-sm btn-delete" onclick="deleteProduct('${row.id}')">🗑️ ลบถาวร</button>
+        </td>
       </tr>
     `).join('');
   } catch (err) {

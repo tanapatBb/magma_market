@@ -128,6 +128,14 @@ h1 {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+  border-color: #3498db;
 }
 
 .product-img {
@@ -149,15 +157,24 @@ h1 {
   margin-top: 4px;
 }
 
+.card-actions {
+  margin-top: 15px;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
 .btn-sm {
-  padding: 5px 10px;
+  padding: 5px 8px;
   font-size: 0.8rem;
   border-radius: 4px;
   border: none;
   cursor: pointer;
-  margin-left: 4px;
 }
 
+.btn-edit { background-color: #2980b9; color: white; }
 .btn-print { background-color: #f39c12; color: white; }
 .btn-stock { background-color: #e67e22; color: white; }
 
@@ -236,9 +253,6 @@ h1 {
   display: none;
 }
 
-/* ==========================================
-   CSS ควบคุมการพิมพ์ (Print Preview)
-   ========================================== */
 @media print {
   body * {
     visibility: hidden !important;
