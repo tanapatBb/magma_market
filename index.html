@@ -1,315 +1,282 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Magma Market - Portal Management</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
 
-body {
-  background-color: #f4f7f6;
-  color: #333;
-  padding: 10px;
-}
+<div class="container main-ui">
+  <h1>🐾 Magma Market Portal</h1>
 
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-}
+  <div class="tab-menu">
+    <button class="tab-btn active" onclick="switchTab('stock-tab')">📦 คลังสินค้า</button>
+    <button class="tab-btn" onclick="switchTab('database-tab')">⚙️ Database</button>
+  </div>
 
-h1 {
-  text-align: center;
-  color: #2c3e50;
-  font-size: 1.4rem;
-  margin: 10px 0 15px 0;
-}
+  <div id="stock-tab" class="tab-content active">
+    
+    <div class="card-box scanner-card">
+      <button class="btn btn-secondary btn-block" onclick="toggleScanner()">
+        📷 สแกนบาร์โค้ดตัดสต็อก (-1)
+      </button>
+      <div id="reader-container" style="display: none; margin-top: 15px;">
+        <div id="reader"></div>
+        <button class="btn btn-delete btn-block" onclick="stopScanner()" style="margin-top: 10px;">❌ ปิดกล้อง</button>
+      </div>
+    </div>
 
-.tab-menu {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 15px;
-}
+    <div style="margin-bottom: 15px;">
+      <button class="btn btn-primary btn-block" onclick="toggleAddForm()">
+        ➕ เพิ่มรายการสินค้าใหม่ (คลิกเปิด/ปิด)
+      </button>
+    </div>
 
-.tab-btn {
-  flex: 1;
-  padding: 10px;
-  background-color: #e0e0e0;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: bold;
-  cursor: pointer;
-  white-space: nowrap;
-}
+    <!-- ฟอร์มเพิ่มสินค้า -->
+    <div class="card-box" id="addProductFormCard" style="display: none;">
+      <h2>➕ เพิ่มสินค้าเข้าสต็อก</h2>
+      <form id="productForm" onsubmit="handleAddProduct(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>ยี่ห้อ (Brand)</label>
+            <input type="text" id="brand" placeholder="เช่น SmartHeart" required list="brandSuggestions">
+            <datalist id="brandSuggestions"></datalist>
+          </div>
+          <div class="form-group">
+            <label>ชื่อสูตร/สินค้า</label>
+            <input type="text" id="name" placeholder="เช่น อาหารสุนัขโต" required list="nameSuggestions">
+            <datalist id="nameSuggestions"></datalist>
+          </div>
+        </div>
 
-.tab-btn.active {
-  background-color: #3498db;
-  color: white;
-}
+        <div class="form-row">
+          <div class="form-group">
+            <label>💰 ราคาทุน (บาท)</label>
+            <input type="number" step="any" id="costPrice" placeholder="0.00" oninput="calculateSellingPrice()" required>
+          </div>
+          <div class="form-group">
+            <label>📈 บวกกำไร (%)</label>
+            <select id="profitMargin" onchange="calculateSellingPrice()">
+              <option value="40">40%</option>
+              <option value="50">50%</option>
+              <option value="60" selected>60%</option>
+              <option value="70">70%</option>
+              <option value="80">80%</option>
+              <option value="90">90%</option>
+              <option value="100">100%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>🏷️ ราคาขายตั้งต้น</label>
+            <input type="number" step="any" id="sellingPrice" placeholder="0.00" readonly style="background: #f0f0f0; font-weight: bold; color: #27ae60;">
+          </div>
+        </div>
 
-.tab-content { display: none; }
-.tab-content.active { display: block; }
+        <div class="form-row">
+          <div class="form-group">
+            <label>เลขล็อตนำเข้า (Lot No.)</label>
+            <input type="text" id="lotNo" placeholder="เช่น LOT-20260801" required>
+          </div>
+          <div class="form-group">
+            <label>จำนวนสต็อก (ถุง/ชิ้น)</label>
+            <input type="number" id="stock" placeholder="0" required>
+          </div>
+        </div>
 
-.card-box {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  margin-bottom: 15px;
-}
+        <div class="form-row">
+          <div class="form-group">
+            <label>📅 วันที่รับเข้า</label>
+            <input type="date" id="importDate" required>
+          </div>
+          <div class="form-group">
+            <label>⚠️ วันที่หมดอายุ (EXP)</label>
+            <input type="date" id="expiryDate" required>
+            <div class="quick-exp-btns">
+              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(3)">+3M</button>
+              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(6)">+6M</button>
+              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(12)">+1Y</button>
+            </div>
+          </div>
+        </div>
 
-.card-box h2 {
-  font-size: 1.1rem;
-  color: #34495e;
-  margin-bottom: 12px;
-}
+        <div class="form-row">
+          <div class="form-group">
+            <label>ขนาด/ปริมาตร</label>
+            <input type="number" step="any" id="volumeValue" placeholder="เช่น 1.2">
+          </div>
+          <div class="form-group">
+            <label>หน่วย</label>
+            <select id="volumeUnit">
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="ถุง">ถุง/ชิ้น</option>
+            </select>
+          </div>
+        </div>
 
-.scanner-card {
-  background: #eef7fe;
-  border: 2px dashed #3498db;
-  text-align: center;
-}
+        <div class="form-group" style="margin-bottom: 15px;">
+          <label>📸 รูปสินค้า</label>
+          <input type="file" id="productImage" accept="image/*" onchange="previewImage(event)">
+          <div id="imagePreviewContainer" style="margin-top: 10px; display: none;">
+            <img id="imagePreview" src="" alt="Preview" style="max-width: 100px; border-radius: 8px;">
+          </div>
+        </div>
 
-.form-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
+        <button type="submit" class="btn btn-primary btn-block">💾 บันทึกลง Database</button>
+      </form>
+    </div>
 
-.form-group {
-  flex: 1;
-  min-width: 120px;
-  display: flex;
-  flex-direction: column;
-}
+    <!-- ส่วนค้นหา & กรองยี่ห้อ -->
+    <div class="card-box" style="padding: 12px;">
+      <div class="form-row" style="margin-bottom: 0;">
+        <div class="form-group">
+          <label>🔍 ค้นหาตามชื่อสินค้า</label>
+          <input type="text" id="searchKeyword" placeholder="พิมพ์ชื่อสินค้า..." oninput="filterProducts()">
+        </div>
+        <div class="form-group">
+          <label>🏷️ กรองตามยี่ห้อ</label>
+          <select id="filterBrandSelect" onchange="filterProducts()">
+            <option value="">ทั้งหมด (All Brands)</option>
+          </select>
+        </div>
+      </div>
+    </div>
 
-.form-group label {
-  font-size: 0.8rem;
-  font-weight: bold;
-  margin-bottom: 4px;
-  color: #555;
-}
+    <div class="card-box">
+      <h2>📦 รายการสินค้าคงเหลือ (จัดกลุ่มตามยี่ห้อ/ชื่อ)</h2>
+      <div id="productList" class="product-grid">
+        <div class="empty-state">กำลังโหลดข้อมูล...</div>
+      </div>
+    </div>
+  </div>
 
-.form-group input, .form-group select {
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  width: 100%;
-}
+  <div id="database-tab" class="tab-content">
+    <div class="card-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <h2>📊 ตาราง Database (แยกทุกรายการ)</h2>
+        <button class="btn btn-secondary" onclick="fetchDatabaseTable()">🔄 รีเฟรช</button>
+      </div>
 
-.quick-exp-btns {
-  display: flex;
-  gap: 4px;
-  margin-top: 5px;
-}
+      <div class="table-responsive">
+        <table class="db-table" id="dbMainTable">
+          <thead id="dbTableHeader"></thead>
+          <tbody id="dbTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
-.btn-quick {
-  flex: 1;
-  padding: 4px 2px;
-  font-size: 0.75rem;
-  background: #e8f4fc;
-  color: #2980b9;
-  border: 1px solid #bee3f8;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-}
+<!-- Modal แก้ไขสินค้า -->
+<div id="editModal" class="modal-overlay main-ui">
+  <div class="modal-content">
+    <h3>✏️ แก้ไขรายการสินค้า (เฉพาะล็อตนี้)</h3>
+    <form id="editForm" onsubmit="handleUpdateProduct(event)" style="margin-top: 15px;">
+      <input type="hidden" id="editId">
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>ยี่ห้อ (Brand)</label>
+          <input type="text" id="editBrand" required list="brandSuggestions">
+        </div>
+        <div class="form-group">
+          <label>ชื่อสูตร/สินค้า</label>
+          <input type="text" id="editName" required list="nameSuggestions">
+        </div>
+      </div>
 
-.btn-quick:active {
-  background: #3498db;
-  color: #fff;
-}
+      <div class="form-row">
+        <div class="form-group">
+          <label>💰 ราคาทุน</label>
+          <input type="number" step="any" id="editCostPrice" oninput="calculateSellingPrice(true)">
+        </div>
+        <div class="form-group">
+          <label>📈 บวกกำไร (%)</label>
+          <select id="editProfitMargin" onchange="calculateSellingPrice(true)">
+            <option value="40">40%</option>
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+            <option value="70">70%</option>
+            <option value="80">80%</option>
+            <option value="90">90%</option>
+            <option value="100">100%</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>🏷️ ราคาขาย</label>
+          <input type="number" step="any" id="editSellingPrice" readonly style="background: #f0f0f0; font-weight: bold; color: #27ae60;">
+        </div>
+      </div>
 
-.btn {
-  padding: 10px;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
+      <div class="form-row">
+        <div class="form-group">
+          <label>เลขล็อต (Lot No.)</label>
+          <input type="text" id="editLotNo" required>
+        </div>
+        <div class="form-group">
+          <label>จำนวนสต็อก</label>
+          <input type="number" id="editStock" required>
+        </div>
+      </div>
 
-.btn-block { width: 100%; }
-.btn-primary { background-color: #27ae60; color: white; }
-.btn-secondary { background-color: #3498db; color: white; }
-.btn-warning { background-color: #f39c12; color: white; }
-.btn-delete { background-color: #e74c3c; color: white; }
+      <div class="form-row">
+        <div class="form-group">
+          <label>📅 วันที่รับเข้า</label>
+          <input type="date" id="editImportDate" required>
+        </div>
+        <div class="form-group">
+          <label>⚠️ วันที่หมดอายุ (EXP)</label>
+          <input type="date" id="editExpiryDate" required>
+          <div class="quick-exp-btns">
+            <button type="button" class="btn-quick" onclick="addMonthsToExpiry(3, true)">+3M</button>
+            <button type="button" class="btn-quick" onclick="addMonthsToExpiry(6, true)">+6M</button>
+            <button type="button" class="btn-quick" onclick="addMonthsToExpiry(12, true)">+1Y</button>
+          </div>
+        </div>
+      </div>
 
-.product-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label>ขนาด/ปริมาตร</label>
+        <input type="text" id="editSize" placeholder="เช่น 1.2 kg">
+      </div>
 
-.product-card {
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 12px;
-  background: #fff;
-}
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary" style="flex:1;">💾 บันทึก</button>
+        <button type="button" class="btn btn-secondary" onclick="closeEditModal()" style="flex:1;">ยกเลิก</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-.product-img {
-  width: 100%;
-  max-height: 140px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin-bottom: 8px;
-}
+<!-- Modal บาร์โค้ด -->
+<div id="barcodeModal" class="modal-overlay main-ui">
+  <div class="modal-content">
+    <h3>✅ บันทึกสินค้าสำเร็จ!</h3>
+    <p>รหัสบาร์โค้ด: <b id="modalBarcodeText" style="font-size: 1.2rem; color: #27ae60;">-</b></p>
+    <p style="margin-top: -5px; font-size: 0.9rem; color: #666;">ล็อต: <span id="modalLotText">-</span></p>
+    <div style="margin: 15px 0;">
+      <svg id="modalBarcodeCanvas"></svg>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-warning" onclick="triggerPrintFromModal()" style="flex:1;">🖨️ พิมพ์</button>
+      <button class="btn btn-secondary" onclick="closeModal()" style="flex:1;">ปิด</button>
+    </div>
+  </div>
+</div>
 
-.product-info h3 {
-  font-size: 1.1rem;
-  color: #2c3e50;
-  margin-bottom: 2px;
-}
+<div id="printArea">
+  <div class="label-box">
+    <div class="label-title" id="printBrand">BRAND</div>
+    <div class="label-name" id="printName">PRODUCT NAME</div>
+    <div class="label-lot" id="printLot">LOT: -</div>
+    <svg id="barcodeCanvas"></svg>
+  </div>
+</div>
 
-.lots-wrapper {
-  margin-top: 10px;
-  border-top: 1px solid #eee;
-  padding-top: 8px;
-}
-
-.lot-item {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 8px;
-  margin-bottom: 8px;
-}
-
-.lot-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-  margin-bottom: 4px;
-}
-
-.stock-badge {
-  background: #e8f8f5;
-  color: #27ae60;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: bold;
-  font-size: 0.8rem;
-}
-
-.lot-details {
-  font-size: 0.8rem;
-  color: #555;
-  margin-bottom: 6px;
-}
-
-.lot-actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-}
-
-.btn-action {
-  padding: 6px 0;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  border: none;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  text-align: center;
-}
-
-.btn-edit { background-color: #2980b9; }
-.btn-print { background-color: #f39c12; }
-.btn-stock { background-color: #e67e22; }
-
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.db-table {
-  width: 100%;
-  border-collapse: collapse;
-  white-space: nowrap;
-}
-
-.db-table th, .db-table td {
-  border: 1px solid #ddd;
-  padding: 6px 8px;
-  font-size: 0.8rem;
-}
-
-.db-table th { background-color: #f2f2f2; }
-
-.empty-state {
-  text-align: center;
-  color: #999;
-  padding: 20px;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 15px;
-}
-
-.modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 450px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 15px;
-}
-
-#reader {
-  width: 100%;
-  max-width: 320px;
-  margin: 0 auto;
-  border-radius: 8px;
-  overflow: hidden;
-  position: relative;
-}
-
-.scanner-laser {
-  position: absolute;
-  top: 50%; left: 10%;
-  width: 80%; height: 2px;
-  background: #e74c3c;
-  box-shadow: 0 0 8px #e74c3c;
-  z-index: 10;
-  animation: scan-anim 1.5s infinite ease-in-out;
-}
-
-@keyframes scan-anim {
-  0% { transform: translateY(-30px); }
-  50% { transform: translateY(30px); }
-  100% { transform: translateY(-30px); }
-}
-
-#printArea { display: none; }
-
-@media print {
-  body * { visibility: hidden !important; }
-  .main-ui, .modal-overlay, .container { display: none !important; }
-  #printArea, #printArea * { visibility: visible !important; }
-  #printArea {
-    position: absolute !important; left: 0 !important; top: 0 !important;
-    width: 100% !important; display: flex !important; justify-content: center !important;
-  }
-  .label-box {
-    border: 1px dashed #000 !important; padding: 10px !important; width: 250px !important;
-    text-align: center !important; background: #fff !important; page-break-inside: avoid !important;
-  }
-}
+<script src="script.js"></script>
+</body>
+</html>

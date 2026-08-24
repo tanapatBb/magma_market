@@ -441,7 +441,7 @@ async function onScanSuccess(decodedText) {
   }
 }
 
-// ฟังก์ชันช่วยสำหรับตัดสต็อกทันทีหลังจากยืนยันจากหน้าสแกน
+// ฟังก์ชันช่วยตัดสต็อกหลังยืนยันจากหน้าสแกน
 async function reduceStockDirect(id, currentStock) {
   const res = await fetch(`${API_URL}/products/${id}`, {
     method: 'PUT',
