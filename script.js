@@ -1,5 +1,4 @@
 const API_URL = 'https://magma-market-api.onrender.com/api';
-// 🆕 เพิ่ม importDate และ expiryDate ในคอลัมน์แสดงผล Database
 let dbColumns = ['id', 'barcode', 'lotNo', 'brand', 'name', 'importDate', 'expiryDate', 'size', 'stock'];
 let html5QrCode = null;
 let currentImageData = '';
@@ -9,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchProducts();
   fetchDatabaseTable();
   
-  // ตั้งค่าวันที่รับเข้า (importDate) ให้เป็นวันปัจจุบันโดยค่าเริ่มต้น
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('importDate').value = today;
 });
@@ -41,12 +39,11 @@ function previewImage(event) {
   }
 }
 
-// 🆕 ฟังก์ชันคำนวณวันหมดอายุคงเหลือ
 function getExpiryStatus(expiryDateString) {
   if (!expiryDateString) return { text: 'ไม่ระบุ', color: '#7f8c8d' };
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // รีเซ็ตเวลาเป็นเที่ยงคืนเพื่อเทียบเฉพาะวันที่
+  today.setHours(0, 0, 0, 0);
   const expiryDate = new Date(expiryDateString);
   expiryDate.setHours(0, 0, 0, 0);
 
@@ -54,11 +51,11 @@ function getExpiryStatus(expiryDateString) {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) {
-    return { text: `หมดอายุแล้ว! (${Math.abs(diffDays)} วัน)`, color: '#e74c3c' }; // สีแดง
+    return { text: `หมดอายุแล้ว! (${Math.abs(diffDays)} วัน)`, color: '#e74c3c' };
   } else if (diffDays <= 30) {
-    return { text: `ใกล้หมดอายุ (เหลือ ${diffDays} วัน)`, color: '#e67e22' }; // สีส้ม
+    return { text: `ใกล้หมดอายุ (เหลือ ${diffDays} วัน)`, color: '#e67e22' };
   } else {
-    return { text: `อายุคงเหลือ ${diffDays} วัน`, color: '#27ae60' }; // สีเขียว
+    return { text: `อายุคงเหลือ ${diffDays} วัน`, color: '#27ae60' };
   }
 }
 
@@ -82,7 +79,6 @@ function renderProducts(products) {
   }
 
   container.innerHTML = products.map(item => {
-    // 🆕 เรียกใช้ฟังก์ชันคำนวณวันหมดอายุ
     const expStatus = getExpiryStatus(item.expiryDate);
 
     return `
@@ -94,7 +90,6 @@ function renderProducts(products) {
           <p><strong>ล็อตสินค้า:</strong> <span style="color: #d35400; font-weight: bold;">${item.lotNo || '-'}</span></p>
           <p><strong>บาร์โค้ด:</strong> <code style="background: #eee; padding: 2px 4px; border-radius: 3px;">${item.barcode || '-'}</code></p>
           
-          <!-- 🆕 แสดงวันที่ และอายุคงเหลือ -->
           <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; margin: 8px 0; border: 1px solid #eee;">
             <p style="margin: 0 0 5px 0; font-size: 0.85rem;"><strong>รับเข้า:</strong> ${item.importDate || 'ไม่ระบุ'}</p>
             <p style="margin: 0; font-size: 0.85rem;"><strong>หมดอายุ:</strong> ${item.expiryDate || 'ไม่ระบุ'}</p>
@@ -128,8 +123,8 @@ async function handleAddProduct(event) {
     volumeValue: document.getElementById('volumeValue').value,
     volumeUnit: document.getElementById('volumeUnit').value,
     stock: document.getElementById('stock').value,
-    importDate: document.getElementById('importDate').value, // 🆕 ส่งข้อมูลวันที่
-    expiryDate: document.getElementById('expiryDate').value, // 🆕 ส่งข้อมูลวันที่
+    importDate: document.getElementById('importDate').value,
+    expiryDate: document.getElementById('expiryDate').value,
     image: currentImageData
   };
 
@@ -146,7 +141,6 @@ async function handleAddProduct(event) {
       
       document.getElementById('productForm').reset();
       
-      // เซ็ตวันที่รับเข้ากลับเป็นวันปัจจุบันใหม่หลังบันทึก
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('importDate').value = today;
 
@@ -193,14 +187,16 @@ function printBarcode(brand, name, barcodeCode, lotNo) {
 
   JsBarcode("#barcodeCanvas", barcodeCode, {
     format: "CODE128",
-    width: 3,
+    width: 2,
     height: 50,
     displayValue: true,
     fontSize: 14,
     margin: 0
   });
 
-  window.print();
+  setTimeout(() => {
+    window.print();
+  }, 100);
 }
 
 async function toggleScanner() {
