@@ -1,12 +1,17 @@
 const API_URL = 'https://magma-market-api.onrender.com/api';
-let dbColumns = ['id', 'barcode', 'lotNo', 'brand', 'name', 'size', 'stock'];
-let html5QrcodeScanner = null;
+// 🆕 เพิ่ม importDate และ expiryDate ในคอลัมน์แสดงผล Database
+let dbColumns = ['id', 'barcode', 'lotNo', 'brand', 'name', 'importDate', 'expiryDate', 'size', 'stock'];
+let html5QrCode = null;
 let currentImageData = '';
 let lastSavedProduct = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchProducts();
   fetchDatabaseTable();
+  
+  // ตั้งค่าวันที่รับเข้า (importDate) ให้เป็นวันปัจจุบันโดยค่าเริ่มต้น
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('importDate').value = today;
 });
 
 function switchTab(tabId) {
@@ -36,6 +41,27 @@ function previewImage(event) {
   }
 }
 
+// 🆕 ฟังก์ชันคำนวณวันหมดอายุคงเหลือ
+function getExpiryStatus(expiryDateString) {
+  if (!expiryDateString) return { text: 'ไม่ระบุ', color: '#7f8c8d' };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // รีเซ็ตเวลาเป็นเที่ยงคืนเพื่อเทียบเฉพาะวันที่
+  const expiryDate = new Date(expiryDateString);
+  expiryDate.setHours(0, 0, 0, 0);
+
+  const diffTime = expiryDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return { text: `หมดอายุแล้ว! (${Math.abs(diffDays)} วัน)`, color: '#e74c3c' }; // สีแดง
+  } else if (diffDays <= 30) {
+    return { text: `ใกล้หมดอายุ (เหลือ ${diffDays} วัน)`, color: '#e67e22' }; // สีส้ม
+  } else {
+    return { text: `อายุคงเหลือ ${diffDays} วัน`, color: '#27ae60' }; // สีเขียว
+  }
+}
+
 async function fetchProducts() {
   try {
     const res = await fetch(`${API_URL}/products`);
@@ -55,24 +81,39 @@ function renderProducts(products) {
     return;
   }
 
-  container.innerHTML = products.map(item => `
-    <div class="product-card" id="product-card-${item.id}">
-      ${item.image ? `<img src="${item.image}" class="product-img" alt="Product">` : ''}
-      <div class="product-info">
-        <h3>${item.brand || 'ไม่ระบุยี่ห้อ'}</h3>
-        <p><strong>ชื่อ:</strong> ${item.name || 'ไม่ระบุ'}</p>
-        <p><strong>ล็อตสินค้า:</strong> <span style="color: #d35400; font-weight: bold;">${item.lotNo || '-'}</span></p>
-        <p><strong>บาร์โค้ด:</strong> <code style="background: #eee; padding: 2px 4px; border-radius: 3px;">${item.barcode || '-'}</code></p>
-        <p><strong>ขนาด:</strong> ${item.size || (item.volumeValue ? item.volumeValue + ' ' + item.volumeUnit : 'ไม่ได้ระบุ')}</p>
-        <p><strong>คงเหลือ:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${item.stock ?? 0}</b> ถุง</p>
+  container.innerHTML = products.map(item => {
+    // 🆕 เรียกใช้ฟังก์ชันคำนวณวันหมดอายุ
+    const expStatus = getExpiryStatus(item.expiryDate);
+
+    return `
+      <div class="product-card" id="product-card-${item.id}">
+        ${item.image ? `<img src="${item.image}" class="product-img" alt="Product">` : ''}
+        <div class="product-info">
+          <h3>${item.brand || 'ไม่ระบุยี่ห้อ'}</h3>
+          <p><strong>ชื่อ:</strong> ${item.name || 'ไม่ระบุ'}</p>
+          <p><strong>ล็อตสินค้า:</strong> <span style="color: #d35400; font-weight: bold;">${item.lotNo || '-'}</span></p>
+          <p><strong>บาร์โค้ด:</strong> <code style="background: #eee; padding: 2px 4px; border-radius: 3px;">${item.barcode || '-'}</code></p>
+          
+          <!-- 🆕 แสดงวันที่ และอายุคงเหลือ -->
+          <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; margin: 8px 0; border: 1px solid #eee;">
+            <p style="margin: 0 0 5px 0; font-size: 0.85rem;"><strong>รับเข้า:</strong> ${item.importDate || 'ไม่ระบุ'}</p>
+            <p style="margin: 0; font-size: 0.85rem;"><strong>หมดอายุ:</strong> ${item.expiryDate || 'ไม่ระบุ'}</p>
+            <p style="margin: 5px 0 0 0; font-size: 0.9rem; font-weight: bold; color: ${expStatus.color};">
+              ⏳ ${expStatus.text}
+            </p>
+          </div>
+
+          <p><strong>ขนาด:</strong> ${item.size || (item.volumeValue ? item.volumeValue + ' ' + item.volumeUnit : 'ไม่ได้ระบุ')}</p>
+          <p><strong>คงเหลือ:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${item.stock ?? 0}</b> ถุง</p>
+        </div>
+        <div style="margin-top: 15px; text-align: right;">
+          <button class="btn-sm btn-print" onclick="printBarcode('${item.brand}', '${item.name}', '${item.barcode}', '${item.lotNo}')">🖨️ พิมพ์</button>
+          <button class="btn-sm btn-stock" onclick="reduceStock('${item.id}', ${item.stock})">➖ ตัดสต็อก</button>
+          <button class="btn-sm btn-delete" onclick="deleteProduct('${item.id}')">🗑️ ลบ</button>
+        </div>
       </div>
-      <div style="margin-top: 15px; text-align: right;">
-        <button class="btn-sm btn-print" onclick="printBarcode('${item.brand}', '${item.name}', '${item.barcode}', '${item.lotNo}')">🖨️ พิมพ์</button>
-        <button class="btn-sm btn-stock" onclick="reduceStock('${item.id}', ${item.stock})">➖ ตัดสต็อก</button>
-        <button class="btn-sm btn-delete" onclick="deleteProduct('${item.id}')">🗑️ ลบ</button>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 async function handleAddProduct(event) {
@@ -87,6 +128,8 @@ async function handleAddProduct(event) {
     volumeValue: document.getElementById('volumeValue').value,
     volumeUnit: document.getElementById('volumeUnit').value,
     stock: document.getElementById('stock').value,
+    importDate: document.getElementById('importDate').value, // 🆕 ส่งข้อมูลวันที่
+    expiryDate: document.getElementById('expiryDate').value, // 🆕 ส่งข้อมูลวันที่
     image: currentImageData
   };
 
@@ -102,6 +145,11 @@ async function handleAddProduct(event) {
       lastSavedProduct = result.data;
       
       document.getElementById('productForm').reset();
+      
+      // เซ็ตวันที่รับเข้ากลับเป็นวันปัจจุบันใหม่หลังบันทึก
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('importDate').value = today;
+
       document.getElementById('imagePreviewContainer').style.display = 'none';
       currentImageData = '';
       toggleAddForm();
@@ -145,27 +193,75 @@ function printBarcode(brand, name, barcodeCode, lotNo) {
 
   JsBarcode("#barcodeCanvas", barcodeCode, {
     format: "CODE128",
-    width: 2,
-    height: 35,
-    displayValue: true
+    width: 3,
+    height: 50,
+    displayValue: true,
+    fontSize: 14,
+    margin: 0
   });
 
   window.print();
 }
 
-function toggleScanner() {
+async function toggleScanner() {
   const container = document.getElementById('reader-container');
   if (container.style.display === 'none') {
     container.style.display = 'block';
-    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 150 } });
-    html5QrcodeScanner.render(onScanSuccess);
+    
+    if (!html5QrCode) {
+      html5QrCode = new Html5Qrcode("reader");
+    }
+
+    const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
+      return {
+        width: Math.min(viewfinderWidth * 0.8, 280),
+        height: 130
+      };
+    };
+
+    const config = {
+      fps: 20,
+      qrbox: qrboxFunction,
+      aspectRatio: 1.333333,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.UPC_A
+      ]
+    };
+
+    try {
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess
+      );
+
+      setTimeout(() => {
+        const scanRegion = document.getElementById('reader__scan_region');
+        if (scanRegion && !document.querySelector('.scanner-laser')) {
+          const laser = document.createElement('div');
+          laser.className = 'scanner-laser';
+          scanRegion.appendChild(laser);
+        }
+      }, 500);
+
+    } catch (err) {
+      alert("❌ ไม่สามารถเปิดกล้องได้ โปรดอนุญาตการใช้งานกล้องในเบราว์เซอร์");
+      stopScanner();
+    }
   } else {
     stopScanner();
   }
 }
 
-function stopScanner() {
-  if (html5QrcodeScanner) html5QrcodeScanner.clear();
+async function stopScanner() {
+  if (html5QrCode && html5QrCode.isScanning) {
+    await html5QrCode.stop();
+  }
+  const laser = document.querySelector('.scanner-laser');
+  if (laser) laser.remove();
+
   document.getElementById('reader-container').style.display = 'none';
 }
 
@@ -179,7 +275,7 @@ async function onScanSuccess(decodedText) {
     if (item) {
       if (item.stock > 0) {
         await reduceStock(item.id, item.stock);
-        alert(`🎯 สแกนเจอ: ${item.name} (Lot: ${item.lotNo || '-'}) -> ตัดสต็อกเรียบร้อย`);
+        alert(`🎯 สแกนสำเร็จ: ${item.name} (Lot: ${item.lotNo || '-'}) -> ตัดสต็อกเรียบร้อย`);
       } else {
         alert(`⚠️ สินค้าหมดสต็อกแล้ว!`);
       }
