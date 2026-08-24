@@ -11,10 +11,10 @@
 <div class="container">
   <h1>🐾 Magma Market Management Portal</h1>
 
-  <!-- เมนูสลับหน้า -->
+  <!-- เมนูสลับ 2 แท็บหลัก -->
   <div class="tab-menu">
     <button class="tab-btn active" onclick="switchTab('stock-tab')">📦 คลังสินค้า & ตัดสต็อก</button>
-    <button class="tab-btn" onclick="switchTab('database-tab')">⚙️ จัดการโครงสร้าง Database</button>
+    <button class="tab-btn" onclick="switchTab('database-tab')">⚙️ จัดการ Database</button>
   </div>
 
   <!-- TAB 1: คลังสินค้า หลัก -->
@@ -69,48 +69,23 @@
   <!-- TAB 2: จัดการตาราง/โครงสร้าง Database -->
   <div id="database-tab" class="tab-content">
     <div class="card-box">
-      <h2>⚙️ ตั้งค่าโครงสร้างตารางข้อมูล (Database Table Config)</h2>
-      <p style="color: #666; font-size: 0.9rem;">จัดการ Schema และคอลัมน์ของตารางเก็บข้อมูลในระบบ</p>
-      
-      <table class="db-table">
-        <thead>
-          <tr>
-            <th>ชื่อคอลัมน์ (Column)</th>
-            <th>ประเภทข้อมูล (Type)</th>
-            <th>สถานะ</th>
-            <th>จัดการ</th>
-          </tr>
-        </thead>
-        <tbody id="dbSchemaBody">
-          <tr>
-            <td>id</td>
-            <td>STRING (Primary Key)</td>
-            <td><span class="badge badge-required">จำเป็น</span></td>
-            <td>-</td>
-          </tr>
-          <tr>
-            <td>brand</td>
-            <td>STRING</td>
-            <td><span class="badge">ทั่วไป</span></td>
-            <td><button class="btn-sm btn-edit-schema" onclick="editColumn('brand')">✏️ แก้ไข</button></td>
-          </tr>
-          <tr>
-            <td>name</td>
-            <td>STRING</td>
-            <td><span class="badge badge-required">จำเป็น</span></td>
-            <td><button class="btn-sm btn-edit-schema" onclick="editColumn('name')">✏️ แก้ไข</button></td>
-          </tr>
-          <tr>
-            <td>stock</td>
-            <td>INTEGER</td>
-            <td><span class="badge badge-required">จำเป็น</span></td>
-            <td><button class="btn-sm btn-edit-schema" onclick="editColumn('stock')">✏️ แก้ไข</button></td>
-          </tr>
-        </tbody>
-      </table>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2>📊 ตารางข้อมูล Database (Real-time View)</h2>
+        <div>
+          <button class="btn btn-secondary" onclick="fetchDatabaseTable()">🔄 รีเฟรชข้อมูล</button>
+          <button class="btn btn-primary" onclick="addNewColumn()" style="width: auto;">➕ เพิ่มคอลัมน์ใหม่</button>
+        </div>
+      </div>
 
-      <div style="margin-top: 20px;">
-        <button class="btn btn-secondary" onclick="addNewColumn()">➕ เพิ่มคอลัมน์ใหม่ใน Database</button>
+      <div style="overflow-x: auto;">
+        <table class="db-table" id="dbMainTable">
+          <thead id="dbTableHeader">
+            <!-- Header จะถูกสร้างไดนามิกผ่าน JS -->
+          </thead>
+          <tbody id="dbTableBody">
+            <!-- Data Rows จะถูกสร้างผ่าน JS -->
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

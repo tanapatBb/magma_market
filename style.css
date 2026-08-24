@@ -11,7 +11,7 @@ body {
 }
 
 .container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -117,16 +117,8 @@ input, select {
   font-size: 0.85rem;
 }
 
-.btn-stock {
-  background: #e67e22;
-  color: white;
-  margin-right: 5px;
-}
-
-.btn-delete {
-  background: #e74c3c;
-  color: white;
-}
+.btn-stock { background: #e67e22; color: white; margin-right: 5px; }
+.btn-delete { background: #e74c3c; color: white; }
 
 .product-grid {
   display: grid;
@@ -166,36 +158,35 @@ input, select {
   grid-column: 1 / -1;
 }
 
-/* Database Table Styles */
+/* 📊 Database Table Styles */
 .db-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 15px;
-}
-
-.db-table th, .db-table td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: left;
+  margin-top: 10px;
+  font-size: 0.9rem;
 }
 
 .db-table th {
+  background-color: #34495e;
+  color: white;
+  padding: 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.db-table td {
+  border: 1px solid #e1e8ed;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+.db-table tr:nth-child(even) {
   background-color: #f8f9fa;
 }
 
-.badge {
-  background: #95a5a6;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
+.col-header-action {
   font-size: 0.75rem;
-}
-
-.badge-required {
-  background: #e74c3c;
-}
-
-.btn-edit-schema {
-  background: #f39c12;
-  color: white;
+  margin-left: 5px;
+  color: #f1c40f;
+  cursor: pointer;
 }

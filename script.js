@@ -1,6 +1,10 @@
 const API_URL = 'https://magma-market-api.onrender.com/api';
+let dbColumns = ['id', 'brand', 'name', 'size', 'stock', 'expDate'];
 
-document.addEventListener('DOMContentLoaded', fetchProducts);
+document.addEventListener('DOMContentLoaded', () => {
+  fetchProducts();
+  fetchDatabaseTable();
+});
 
 function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -8,9 +12,13 @@ function switchTab(tabId) {
 
   document.getElementById(tabId).classList.add('active');
   event.currentTarget.classList.add('active');
+
+  if (tabId === 'database-tab') {
+    fetchDatabaseTable();
+  }
 }
 
-// 📌 ดึงรายการสินค้าทั้งหมด
+// 📌 1. ดึงรายการสินค้าทั้งหมดหน้าคลัง
 async function fetchProducts() {
   try {
     const res = await fetch(`${API_URL}/products`);
@@ -22,7 +30,6 @@ async function fetchProducts() {
   }
 }
 
-// 📌 แสดงผลสต็อก + ปุ่มตัดสต็อก
 function renderProducts(products) {
   const container = document.getElementById('productList');
   if (!container) return;
@@ -48,7 +55,49 @@ function renderProducts(products) {
   `).join('');
 }
 
-// 📌 เพิ่มสินค้าเข้าสต็อก
+// 📌 2. ดึงข้อมูลตาราง Database (Real-time Table)
+async function fetchDatabaseTable() {
+  try {
+    const res = await fetch(`${API_URL}/products`);
+    const products = await res.json();
+
+    const header = document.getElementById('dbTableHeader');
+    const body = document.getElementById('dbTableBody');
+
+    // สร้าง Header ของตารางตามคอลัมน์ที่มี
+    header.innerHTML = `
+      <tr>
+        ${dbColumns.map(col => `
+          <th>
+            ${col} 
+            ${col !== 'id' ? `<span class="col-header-action" onclick="editColumn('${col}')">✏️</span>` : ''}
+          </th>
+        `).join('')}
+        <th>Action</th>
+      </tr>
+    `;
+
+    // สร้างข้อมูลแต่ละแถว
+    if (!products || products.length === 0) {
+      body.innerHTML = `<tr><td colspan="${dbColumns.length + 1}" style="text-align: center;">ไม่มีข้อมูลใน Database</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = products.map(row => `
+      <tr>
+        ${dbColumns.map(col => `<td>${row[col] !== undefined && row[col] !== null ? row[col] : '-'}</td>`).join('')}
+        <td>
+          <button class="btn-sm btn-delete" onclick="deleteProduct('${row.id}')">🗑️ ลบถาวร</button>
+        </td>
+      </tr>
+    `).join('');
+
+  } catch (err) {
+    console.error('Database Fetch Error:', err);
+  }
+}
+
+// 📌 3. เพิ่มสินค้าเข้าสต็อก
 async function handleAddProduct(event) {
   event.preventDefault();
 
@@ -69,61 +118,80 @@ async function handleAddProduct(event) {
 
     const result = await res.json();
     if (result.status === 'success') {
-      alert('เพิ่มสินค้าเข้าสต็อกเรียบร้อย!');
+      alert('บันทึกข้อมูลลง Database เรียบร้อย!');
       document.getElementById('productForm').reset();
       fetchProducts();
+      fetchDatabaseTable();
     }
   } catch (err) {
     alert('เกิดข้อผิดพลาดในการบันทึก');
   }
 }
 
-// 📌 ตัดสต็อกสินค้า (-1)
+// 📌 4. เพิ่มคอลัมน์ใหม่ใน Database
+function addNewColumn() {
+  const colName = prompt('ระบุชื่อคอลัมน์ใหม่ที่ต้องการเพิ่มในตาราง Database (ภาษาอังกฤษ):');
+  if (colName && colName.trim() !== '') {
+    const cleanColName = colName.trim();
+    if (!dbColumns.includes(cleanColName)) {
+      dbColumns.push(cleanColName);
+      alert(`เพิ่มคอลัมน์ "${cleanColName}" เข้าตาราง Database เรียบร้อย!`);
+      fetchDatabaseTable();
+    } else {
+      alert('มีคอลัมน์นี้อยู่ในตารางแล้ว');
+    }
+  }
+}
+
+// 📌 5. แก้ไขคอลัมน์
+function editColumn(oldColName) {
+  const newColName = prompt(`แก้ไขชื่อคอลัมน์ "${oldColName}" เป็น:`, oldColName);
+  if (newColName && newColName.trim() !== '' && newColName !== oldColName) {
+    const index = dbColumns.indexOf(oldColName);
+    if (index !== -1) {
+      dbColumns[index] = newColName.trim();
+      alert(`อัปเดตชื่อคอลัมน์เรียบร้อย!`);
+      fetchDatabaseTable();
+    }
+  }
+}
+
+// 📌 6. ตัดสต็อก
 async function reduceStock(id, currentStock) {
   if (currentStock <= 0) {
     alert('สินค้าในสต็อกหมดแล้ว!');
     return;
   }
 
-  const newStock = currentStock - 1;
-
   try {
     const res = await fetch(`${API_URL}/products/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stock: newStock })
+      body: JSON.stringify({ stock: currentStock - 1 })
     });
 
     const result = await res.json();
     if (result.status === 'success') {
       fetchProducts();
+      fetchDatabaseTable();
     }
   } catch (err) {
     alert('ไม่สามารถตัดสต็อกได้');
   }
 }
 
-// 📌 ลบสินค้า
+// 📌 7. ลบข้อมูล
 async function deleteProduct(id) {
-  if (!confirm('ยืนยันการลบรายการนี้ใช่หรือไม่?')) return;
+  if (!confirm('ยืนยันการลบรายการนี้ออกจาก Database ใช่หรือไม่?')) return;
 
   try {
     const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
     const result = await res.json();
-    if (result.status === 'success') fetchProducts();
+    if (result.status === 'success') {
+      fetchProducts();
+      fetchDatabaseTable();
+    }
   } catch (err) {
     alert('เกิดข้อผิดพลาดในการลบรายการ');
-  }
-}
-
-// 📌 จำลองฟังก์ชันจัดการตาราง Database
-function editColumn(columnName) {
-  alert(`เปิดการตั้งค่าคอลัมน์ "${columnName}" ใน Database`);
-}
-
-function addNewColumn() {
-  const colName = prompt('ระบุชื่อคอลัมน์ใหม่ที่ต้องการเพิ่มใน Database:');
-  if (colName) {
-    alert(`เพิ่มคอลัมน์ "${colName}" เข้าตารางเรียบร้อยแล้ว`);
   }
 }
