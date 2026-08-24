@@ -3,76 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Magma Market - ระบบจัดการสต็อกอาหารสัตว์</title>
+  <title>Magma Market - Portal Management</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-  <h1>🐾 Magma Market - สต็อกอาหารสัตว์</h1>
+  <h1>🐾 Magma Market Management Portal</h1>
 
-  <!-- 📷 ส่วนเลือกรูป/ถ่ายรูป (ถอด capture="environment" ออกแล้ว เพื่อให้เลือกรุปจากคลังบนมือถือได้) -->
-  <div class="card-box">
-    <h2>📷 แนบรูปภาพสินค้า (ตัวอย่าง)</h2>
-    <div class="upload-section">
-      <input type="file" id="cameraInput" accept="image/*" onchange="handleImageSelect(event)" style="display: none;">
-      <button type="button" class="btn btn-upload" onclick="document.getElementById('cameraInput').click()">📷 ถ่ายรูป หรือ เลือกจากอัลบั้ม</button>
-      <div id="uploadStatus"></div>
+  <!-- 📌 เมนูแท็บสลับหน้า -->
+  <div class="tab-menu">
+    <button class="tab-btn active" onclick="switchTab('stock-tab')">📦 สต็อกสินค้า</button>
+    <button class="tab-btn" onclick="switchTab('manage-tab')">⚙️ จัดการฐานข้อมูล (เพิ่ม/แก้ไข)</button>
+  </div>
+
+  <!-- 🟢 TAB 1: หน้ารายการสต็อกสินค้า -->
+  <div id="stock-tab" class="tab-content active">
+    <div class="card-box">
+      <h2>📦 รายการสินค้าทั้งหมดในระบบ</h2>
+      <div id="productList" class="product-grid">
+        <div class="empty-state">กำลังโหลดข้อมูล...</div>
+      </div>
     </div>
   </div>
 
-  <!-- 📝 ฟอร์มเพิ่มสินค้า -->
-  <div class="card-box">
-    <h2>➕ เพิ่มข้อมูลสินค้า</h2>
-    <form id="productForm" onsubmit="saveProduct(event)">
-      <div class="form-row">
-        <div class="form-group">
-          <label>ยี่ห้อ (Brand)</label>
-          <input type="text" id="brand" placeholder="เช่น SmartHeart, Royal Canin" required>
-        </div>
-        <div class="form-group">
-          <label>ชื่อสูตร/สินค้า</label>
-          <input type="text" id="name" placeholder="เช่น อาหารสุนัขโต รสตับ" required>
-        </div>
-      </div>
+  <!-- 🟢 TAB 2: หน้าจัดการฐานข้อมูล (เพิ่ม / แก้ไข) -->
+  <div id="manage-tab" class="tab-content">
+    <div class="card-box">
+      <h2 id="formTitle">➕ เพิ่มสินค้าใหม่เข้าฐานข้อมูล</h2>
+      <form id="productForm" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="productId">
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>ขนาด/ปริมาตร</label>
-          <input type="number" step="any" id="volumeValue" placeholder="เช่น 1.2 หรือ 500">
+        <div class="form-row">
+          <div class="form-group">
+            <label>ยี่ห้อ (Brand)</label>
+            <input type="text" id="brand" placeholder="เช่น SmartHeart, Royal Canin" required>
+          </div>
+          <div class="form-group">
+            <label>ชื่อสูตร/สินค้า</label>
+            <input type="text" id="name" placeholder="เช่น อาหารสุนัขโต รสตับ" required>
+          </div>
         </div>
-        <div class="form-group">
-          <label>หน่วย</label>
-          <select id="volumeUnit">
-            <option value="kg">kg (กิโลกรัม)</option>
-            <option value="g">g (กรัม)</option>
-            <option value="ml">ml (มิลลิลิตร)</option>
-            <option value="L">L (ลิตร)</option>
-            <option value="ถุง">ถุง/ชิ้น</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>จำนวนคงเหลือ (ถุง)</label>
-          <input type="number" id="stock" placeholder="0" required>
+        <div class="form-row">
+          <div class="form-group">
+            <label>ขนาด/ปริมาตร</label>
+            <input type="number" step="any" id="volumeValue" placeholder="เช่น 1.2 หรือ 500">
+          </div>
+          <div class="form-group">
+            <label>หน่วย</label>
+            <select id="volumeUnit">
+              <option value="kg">kg (กิโลกรัม)</option>
+              <option value="g">g (กรัม)</option>
+              <option value="ml">ml (มิลลิลิตร)</option>
+              <option value="L">L (ลิตร)</option>
+              <option value="ถุง">ถุง/ชิ้น</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label>วันหมดอายุ</label>
-          <input type="date" id="expDate">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>ราคาขาย (บาท)</label>
+            <input type="number" id="price" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>จำนวนคงเหลือ (ถุง)</label>
+            <input type="number" id="stock" placeholder="0" required>
+          </div>
+          <div class="form-group">
+            <label>วันหมดอายุ</label>
+            <input type="date" id="expDate">
+          </div>
         </div>
-      </div>
 
-      <button type="submit" class="btn btn-primary">💾 บันทึกสินค้าลงสต็อก</button>
-    </form>
-  </div>
-
-  <!-- 📦 รายการสินค้าในสต็อก -->
-  <div class="card-box">
-    <h2>📦 รายการสินค้าในสต็อก</h2>
-    <div id="productList" class="product-grid">
-      <div class="empty-state">กำลังโหลดข้อมูล...</div>
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" id="submitBtn" class="btn btn-primary">💾 บันทึกข้อมูลลง Database</button>
+          <button type="button" id="cancelBtn" class="btn btn-cancel" onclick="resetForm()" style="display: none;">❌ ยกเลิกแก้ไข</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
