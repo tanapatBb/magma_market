@@ -2,42 +2,43 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
   background-color: #f4f7f6;
   color: #333;
-  padding: 20px;
+  padding: 10px;
 }
 
 .container {
-  max-width: 1000px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
 h1 {
   text-align: center;
   color: #2c3e50;
-  margin-bottom: 20px;
+  font-size: 1.4rem;
+  margin: 10px 0 15px 0;
 }
 
 .tab-menu {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 15px;
 }
 
 .tab-btn {
   flex: 1;
-  padding: 12px;
+  padding: 10px;
   background-color: #e0e0e0;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .tab-btn.active {
@@ -45,164 +46,193 @@ h1 {
   color: white;
 }
 
-.tab-content {
-  display: none;
-}
-
-.tab-content.active {
-  display: block;
-}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
 .card-box {
   background: white;
-  padding: 20px;
+  padding: 15px;
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  margin-bottom: 15px;
 }
 
 .card-box h2 {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #34495e;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
+.scanner-card {
+  background: #eef7fe;
+  border: 2px dashed #3498db;
+  text-align: center;
+}
+
+/* Form Responsive */
 .form-row {
   display: flex;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .form-group {
   flex: 1;
+  min-width: 130px;
   display: flex;
   flex-direction: column;
 }
 
 .form-group label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   color: #555;
 }
 
 .form-group input, .form-group select {
-  padding: 10px;
+  padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  width: 100%;
 }
 
+/* Quick Expiry Buttons */
+.quick-exp-btns {
+  display: flex;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.btn-quick {
+  flex: 1;
+  padding: 4px 2px;
+  font-size: 0.75rem;
+  background: #e8f4fc;
+  color: #2980b9;
+  border: 1px solid #bee3f8;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-quick:active {
+  background: #3498db;
+  color: #fff;
+}
+
+/* General Buttons */
 .btn {
-  padding: 10px 15px;
+  padding: 10px;
   border: none;
   border-radius: 6px;
   font-weight: bold;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
+.btn-block { width: 100%; }
+
 .btn-primary { background-color: #27ae60; color: white; }
-.btn-primary:hover { background-color: #219150; }
-
 .btn-secondary { background-color: #3498db; color: white; }
-.btn-secondary:hover { background-color: #2980b9; }
-
 .btn-warning { background-color: #f39c12; color: white; }
-.btn-warning:hover { background-color: #d68910; }
-
 .btn-delete { background-color: #e74c3c; color: white; }
-.btn-delete:hover { background-color: #c0392b; }
 
+/* Product Grid & Card Fixes */
 .product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .product-card {
   border: 1px solid #e0e0e0;
   border-radius: 10px;
-  padding: 15px;
+  padding: 12px;
   background: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.product-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-  border-color: #3498db;
 }
 
 .product-img {
   width: 100%;
-  height: 150px;
+  max-height: 140px;
   object-fit: cover;
   border-radius: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .product-info h3 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: #2c3e50;
+  margin-bottom: 4px;
 }
 
 .product-info p {
-  font-size: 0.9rem;
-  color: #666;
-  margin-top: 4px;
+  font-size: 0.85rem;
+  color: #555;
+  margin-top: 2px;
 }
 
-.card-actions {
-  margin-top: 15px;
-  text-align: right;
-  display: flex;
-  justify-content: flex-end;
-  gap: 4px;
-  flex-wrap: wrap;
+.product-info code {
+  background: #eee;
+  padding: 2px 4px;
+  border-radius: 3px;
 }
 
-.btn-sm {
-  padding: 5px 8px;
+.exp-box {
+  background: #f8f9fa;
+  padding: 6px 8px;
+  border-radius: 5px;
+  margin: 6px 0;
+  border: 1px solid #eee;
   font-size: 0.8rem;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
 }
 
-.btn-edit { background-color: #2980b9; color: white; }
-.btn-print { background-color: #f39c12; color: white; }
-.btn-stock { background-color: #e67e22; color: white; }
+/* Fixed Action Grid Buttons */
+.card-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.btn-action {
+  padding: 8px 0;
+  font-size: 0.75rem;
+  border-radius: 5px;
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-edit { background-color: #2980b9; }
+.btn-print { background-color: #f39c12; }
+.btn-stock { background-color: #e67e22; }
+
+/* Table Responsive */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
 
 .db-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  white-space: nowrap;
 }
 
 .db-table th, .db-table td {
   border: 1px solid #ddd;
-  padding: 8px 12px;
-  text-align: left;
-  font-size: 0.85rem;
+  padding: 6px 8px;
+  font-size: 0.8rem;
 }
 
-.db-table th {
-  background-color: #f2f2f2;
-  color: #333;
-}
+.db-table th { background-color: #f2f2f2; }
 
-.empty-state {
-  text-align: center;
-  color: #999;
-  padding: 20px;
-  grid-column: 1 / -1;
-}
-
+/* Modal Responsive */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -211,20 +241,28 @@ h1 {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 15px;
 }
 
 .modal-content {
   background: white;
-  padding: 25px;
+  padding: 20px;
   border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  width: 90%;
+  width: 100%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
 }
 
 #reader {
   width: 100%;
-  max-width: 400px;
+  max-width: 320px;
   margin: 0 auto;
   border-radius: 8px;
   overflow: hidden;
@@ -233,10 +271,8 @@ h1 {
 
 .scanner-laser {
   position: absolute;
-  top: 50%;
-  left: 10%;
-  width: 80%;
-  height: 2px;
+  top: 50%; left: 10%;
+  width: 80%; height: 2px;
   background: #e74c3c;
   box-shadow: 0 0 8px #e74c3c;
   z-index: 10;
@@ -244,52 +280,23 @@ h1 {
 }
 
 @keyframes scan-anim {
-  0% { transform: translateY(-40px); }
-  50% { transform: translateY(40px); }
-  100% { transform: translateY(-40px); }
+  0% { transform: translateY(-30px); }
+  50% { transform: translateY(30px); }
+  100% { transform: translateY(-30px); }
 }
 
-#printArea {
-  display: none;
-}
+#printArea { display: none; }
 
 @media print {
-  body * {
-    visibility: hidden !important;
-  }
-
-  .main-ui, 
-  .modal-overlay, 
-  .container, 
-  header, 
-  nav, 
-  button {
-    display: none !important;
-  }
-
-  #printArea, 
-  #printArea * {
-    visibility: visible !important;
-  }
-
+  body * { visibility: hidden !important; }
+  .main-ui, .modal-overlay, .container { display: none !important; }
+  #printArea, #printArea * { visibility: visible !important; }
   #printArea {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: flex-start !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    position: absolute !important; left: 0 !important; top: 0 !important;
+    width: 100% !important; display: flex !important; justify-content: center !important;
   }
-
   .label-box {
-    border: 1px dashed #000 !important;
-    padding: 10px !important;
-    width: 250px !important;
-    text-align: center !important;
-    background: #fff !important;
-    page-break-inside: avoid !important;
+    border: 1px dashed #000 !important; padding: 10px !important; width: 250px !important;
+    text-align: center !important; background: #fff !important; page-break-inside: avoid !important;
   }
 }

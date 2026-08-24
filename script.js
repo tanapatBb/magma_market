@@ -40,6 +40,18 @@ function previewImage(event) {
   }
 }
 
+// ฟังก์ชันเพิ่มวันหมดอายุทางลัด (+3, +6, +12 เดือน)
+function addMonthsToExpiry(months, isEdit = false) {
+  const importInputId = isEdit ? 'editImportDate' : 'importDate';
+  const expiryInputId = isEdit ? 'editExpiryDate' : 'expiryDate';
+  
+  const importVal = document.getElementById(importInputId).value;
+  const baseDate = importVal ? new Date(importVal) : new Date();
+
+  baseDate.setMonth(baseDate.getMonth() + months);
+  document.getElementById(expiryInputId).value = baseDate.toISOString().split('T')[0];
+}
+
 function getExpiryStatus(expiryDateString) {
   if (!expiryDateString) return { text: 'ไม่ระบุ', color: '#7f8c8d' };
 
@@ -54,9 +66,9 @@ function getExpiryStatus(expiryDateString) {
   if (diffDays < 0) {
     return { text: `หมดอายุแล้ว! (${Math.abs(diffDays)} วัน)`, color: '#e74c3c' };
   } else if (diffDays <= 30) {
-    return { text: `ใกล้หมดอายุ (เหลือ ${diffDays} วัน)`, color: '#e67e22' };
+    return { text: `ใกล้หมดอายุ (${diffDays} วัน)`, color: '#e67e22' };
   } else {
-    return { text: `อายุคงเหลือ ${diffDays} วัน`, color: '#27ae60' };
+    return { text: `เหลือ ${diffDays} วัน`, color: '#27ae60' };
   }
 }
 
@@ -83,18 +95,18 @@ function renderProducts(products) {
     const expStatus = getExpiryStatus(item.expiryDate);
 
     return `
-      <div class="product-card" id="product-card-${item.id}" onclick="openEditModal('${item.id}')">
+      <div class="product-card" id="product-card-${item.id}">
         ${item.image ? `<img src="${item.image}" class="product-img" alt="Product">` : ''}
         <div class="product-info">
           <h3>${item.brand || 'ไม่ระบุยี่ห้อ'}</h3>
           <p><strong>ชื่อ:</strong> ${item.name || 'ไม่ระบุ'}</p>
           <p><strong>ล็อตสินค้า:</strong> <span style="color: #d35400; font-weight: bold;">${item.lotNo || '-'}</span></p>
-          <p><strong>บาร์โค้ด:</strong> <code style="background: #eee; padding: 2px 4px; border-radius: 3px;">${item.barcode || '-'}</code></p>
+          <p><strong>บาร์โค้ด:</strong> <code>${item.barcode || '-'}</code></p>
           
-          <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; margin: 8px 0; border: 1px solid #eee;">
-            <p style="margin: 0 0 5px 0; font-size: 0.85rem;"><strong>รับเข้า:</strong> ${item.importDate || 'ไม่ระบุ'}</p>
-            <p style="margin: 0; font-size: 0.85rem;"><strong>หมดอายุ:</strong> ${item.expiryDate || 'ไม่ระบุ'}</p>
-            <p style="margin: 5px 0 0 0; font-size: 0.9rem; font-weight: bold; color: ${expStatus.color};">
+          <div class="exp-box">
+            <p><strong>รับเข้า:</strong> ${item.importDate || 'ไม่ระบุ'}</p>
+            <p><strong>หมดอายุ:</strong> ${item.expiryDate || 'ไม่ระบุ'}</p>
+            <p style="font-weight: bold; color: ${expStatus.color}; margin-top: 4px;">
               ⏳ ${expStatus.text}
             </p>
           </div>
@@ -102,11 +114,12 @@ function renderProducts(products) {
           <p><strong>ขนาด:</strong> ${item.size || (item.volumeValue ? item.volumeValue + ' ' + item.volumeUnit : 'ไม่ได้ระบุ')}</p>
           <p><strong>คงเหลือ:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${item.stock ?? 0}</b> ถุง</p>
         </div>
-        <div class="card-actions" onclick="event.stopPropagation()">
-          <button class="btn-sm btn-edit" onclick="openEditModal('${item.id}')">✏️ แก้ไข</button>
-          <button class="btn-sm btn-print" onclick="printBarcode('${item.brand}', '${item.name}', '${item.barcode}', '${item.lotNo}')">🖨️ พิมพ์</button>
-          <button class="btn-sm btn-stock" onclick="reduceStock('${item.id}', ${item.stock})">➖ ตัดสต็อก</button>
-          <button class="btn-sm btn-delete" onclick="deleteProduct('${item.id}')">🗑️ ลบ</button>
+
+        <div class="card-actions">
+          <button class="btn-action btn-edit" onclick="openEditModal('${item.id}')">✏️ แก้ไข</button>
+          <button class="btn-action btn-print" onclick="printBarcode('${item.brand}', '${item.name}', '${item.barcode}', '${item.lotNo}')">🖨️ พิมพ์</button>
+          <button class="btn-action btn-stock" onclick="reduceStock('${item.id}', ${item.stock})">➖ ตัดสต็อก</button>
+          <button class="btn-action btn-delete" onclick="deleteProduct('${item.id}')">🗑️ ลบ</button>
         </div>
       </div>
     `;
@@ -263,8 +276,8 @@ async function toggleScanner() {
 
     const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
       return {
-        width: Math.min(viewfinderWidth * 0.8, 280),
-        height: 130
+        width: Math.min(viewfinderWidth * 0.8, 250),
+        height: 120
       };
     };
 
@@ -296,7 +309,7 @@ async function toggleScanner() {
       }, 500);
 
     } catch (err) {
-      alert("❌ ไม่สามารถเปิดกล้องได้ โปรดอนุญาตการใช้งานกล้องในเบราว์เซอร์");
+      alert("❌ ไม่สามารถเปิดกล้องได้");
       stopScanner();
     }
   } else {
@@ -324,12 +337,12 @@ async function onScanSuccess(decodedText) {
     if (item) {
       if (item.stock > 0) {
         await reduceStock(item.id, item.stock);
-        alert(`🎯 สแกนสำเร็จ: ${item.name} (Lot: ${item.lotNo || '-'}) -> ตัดสต็อกเรียบร้อย`);
+        alert(`🎯 ตัดสต็อกเรียบร้อย: ${item.name}`);
       } else {
         alert(`⚠️ สินค้าหมดสต็อกแล้ว!`);
       }
     } else {
-      alert(`❌ ไม่พบสินค้าบาร์โค้ดรหัส: ${decodedText}`);
+      alert(`❌ ไม่พบรหัสบาร์โค้ด: ${decodedText}`);
     }
   } catch (err) {
     alert('เกิดข้อผิดพลาดในการสแกน');
@@ -343,10 +356,10 @@ async function fetchDatabaseTable() {
     const header = document.getElementById('dbTableHeader');
     const body = document.getElementById('dbTableBody');
 
-    header.innerHTML = `<tr>${dbColumns.map(col => `<th>${col}</th>`).join('')}<th>Action</th></tr>`;
+    header.innerHTML = `<tr>${dbColumns.map(col => `<th>${col}</th>`).join('')}<th>จัดการ</th></tr>`;
 
     if (!products || products.length === 0) {
-      body.innerHTML = `<tr><td colspan="${dbColumns.length + 1}" style="text-align: center;">ไม่มีข้อมูลใน Database</td></tr>`;
+      body.innerHTML = `<tr><td colspan="${dbColumns.length + 1}" style="text-align: center;">ไม่มีข้อมูล</td></tr>`;
       return;
     }
 
@@ -354,8 +367,10 @@ async function fetchDatabaseTable() {
       <tr>
         ${dbColumns.map(col => `<td>${row[col] !== undefined && row[col] !== null ? row[col] : '-'}</td>`).join('')}
         <td>
-          <button class="btn-sm btn-edit" onclick="openEditModal('${row.id}')">✏️ แก้ไข</button>
-          <button class="btn-sm btn-delete" onclick="deleteProduct('${row.id}')">🗑️ ลบถาวร</button>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn-action btn-edit" onclick="openEditModal('${row.id}')">✏️</button>
+            <button class="btn-action btn-delete" onclick="deleteProduct('${row.id}')">🗑️</button>
+          </div>
         </td>
       </tr>
     `).join('');
@@ -365,7 +380,7 @@ async function fetchDatabaseTable() {
 }
 
 async function reduceStock(id, currentStock) {
-  if (currentStock <= 0) return alert('สินค้าในสต็อกหมดแล้ว!');
+  if (currentStock <= 0) return alert('สินค้าหมดสต็อก!');
   try {
     const res = await fetch(`${API_URL}/products/${id}`, {
       method: 'PUT',
@@ -383,7 +398,7 @@ async function reduceStock(id, currentStock) {
 }
 
 async function deleteProduct(id) {
-  if (!confirm('ยืนยันการลบรายการนี้ออกจาก Database?')) return;
+  if (!confirm('ยืนยันการลบรายการนี้?')) return;
   try {
     const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
     const result = await res.json();
@@ -392,6 +407,6 @@ async function deleteProduct(id) {
       fetchDatabaseTable();
     }
   } catch (err) {
-    alert('เกิดข้อผิดพลาดในการลบรายการ');
+    alert('เกิดข้อผิดพลาด');
   }
 }
