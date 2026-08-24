@@ -1,17 +1,27 @@
 const API_URL = 'https://magma-market-api.onrender.com/api';
-let dbColumns = ['id', 'barcode', 'lotNo', 'brand', 'name', 'costPrice', 'profitMargin', 'sellingPrice', 'importDate', 'expiryDate', 'size', 'stock'];
 let html5QrCode = null;
 let currentImageData = '';
 let lastSavedProduct = null;
 let productsCache = [];
 let myChart = null;
 
+// Helper Function ดึงค่า Key แบบรองรับทั้ง camelCase และ snake_case
+function getValue(obj, ...keys) {
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
+      return obj[key];
+    }
+  }
+  return null;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   fetchProducts();
   fetchDatabaseTable();
   
   const today = new Date().toISOString().split('T')[0];
-  document.getElementById('importDate').value = today;
+  const importInput = document.getElementById('importDate');
+  if (importInput) importInput.value = today;
 });
 
 function switchTab(tabId) {
@@ -19,7 +29,10 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
   
-  const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+  const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => {
+    const onclickAttr = btn.getAttribute('onclick');
+    return onclickAttr && onclickAttr.includes(tabId);
+  });
   if (activeBtn) activeBtn.classList.add('active');
 
   if (tabId === 'database-tab') fetchDatabaseTable();
@@ -100,7 +113,7 @@ async function fetchProducts() {
     populateSuggestions(productsCache);
     filterProducts();
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching products:', err);
   }
 }
 
@@ -155,7 +168,7 @@ function renderGroupedProducts(products) {
         brand: item.brand,
         name: item.name,
         size: item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit || ''}` : ''),
-        image: item.image || item.img || item.photo || '',
+        image: getValue(item, 'image', 'img', 'photo') || '',
         totalStock: 0,
         lots: []
       };
@@ -177,18 +190,18 @@ function renderGroupedProducts(products) {
           <div class="lots-wrapper">
             <h4 style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 6px;">📦 รายการแยกตามล็อต (${group.lots.length} ล็อต):</h4>
             ${group.lots.map(lot => {
-              // Fallback Key จาก DB ทั้ง CamelCase และ snake_case
-              const cost = lot.costPrice ?? lot.cost_price ?? lot.cost ?? null;
-              const selling = lot.sellingPrice ?? lot.selling_price ?? lot.price ?? null;
-              const margin = lot.profitMargin ?? lot.profit_margin ?? 60;
-              const expDate = lot.expiryDate || lot.expiry_date || lot.exp || '-';
+              const cost = getValue(lot, 'costPrice', 'cost_price', 'cost');
+              const selling = getValue(lot, 'sellingPrice', 'selling_price', 'price');
+              const margin = getValue(lot, 'profitMargin', 'profit_margin') || 60;
+              const expDate = getValue(lot, 'expiryDate', 'expiry_date', 'exp') || '-';
+              const lotNo = getValue(lot, 'lotNo', 'lot_no') || 'ไม่ระบุล็อต';
 
               const expStatus = getExpiryStatus(expDate);
 
               return `
                 <div class="lot-item">
                   <div class="lot-header">
-                    <span>🏷️ <b>${lot.lotNo || lot.lot_no || 'ไม่ระบุล็อต'}</b> (รหัส: <code>${lot.barcode}</code>)</span>
+                    <span>🏷️ <b>${lotNo}</b> (รหัส: <code>${lot.barcode}</code>)</span>
                     <span class="stock-badge">คงเหลือ ${lot.stock}</span>
                   </div>
                   
@@ -199,7 +212,7 @@ function renderGroupedProducts(products) {
 
                   <div class="lot-actions">
                     <button class="btn-action btn-edit" onclick="openEditModal('${lot.id}')">✏️ แก้ไข</button>
-                    <button class="btn-action btn-print" onclick="printBarcode('${lot.brand}', '${lot.name}', '${lot.barcode}', '${lot.lotNo}')">🖨️ พิมพ์</button>
+                    <button class="btn-action btn-print" onclick="printBarcode('${lot.brand}', '${lot.name}', '${lot.barcode}', '${lotNo}')">🖨️ พิมพ์</button>
                     <button class="btn-action btn-stock" onclick="reduceStock('${lot.id}', ${lot.stock})">➖ ตัดสต็อก</button>
                     <button class="btn-action btn-delete" onclick="deleteProduct('${lot.id}')">🗑️ ลบ</button>
                   </div>
@@ -219,8 +232,8 @@ function renderDashboard() {
   const summaryMap = {};
 
   productsCache.forEach(item => {
-    const cost = Number(item.costPrice ?? item.cost_price ?? item.cost ?? 0);
-    const selling = Number(item.sellingPrice ?? item.selling_price ?? item.price ?? 0);
+    const cost = Number(getValue(item, 'costPrice', 'cost_price', 'cost') || 0);
+    const selling = Number(getValue(item, 'sellingPrice', 'selling_price', 'price') || 0);
     const stock = Number(item.stock || 0);
 
     totalCost += cost * stock;
@@ -274,6 +287,68 @@ function renderDashboard() {
   `).join('');
 }
 
+async function fetchDatabaseTable() {
+  try {
+    const res = await fetch(`${API_URL}/products`);
+    const products = await res.json();
+    const header = document.getElementById('dbTableHeader');
+    const body = document.getElementById('dbTableBody');
+
+    const headers = [
+      'ID', 'Barcode', 'Lot No', 'Brand', 'Name', 
+      'Cost Price', 'Profit (%)', 'Selling Price', 
+      'Import Date', 'Expiry Date', 'Size', 'Stock', 'จัดการ'
+    ];
+    header.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+
+    if (!products || products.length === 0) {
+      body.innerHTML = `<tr><td colspan="${headers.length}" style="text-align: center;">ไม่มีข้อมูล</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = products.map(row => {
+      const id = row.id ?? '-';
+      const barcode = row.barcode ?? '-';
+      const lotNo = getValue(row, 'lotNo', 'lot_no') || '-';
+      const brand = row.brand ?? '-';
+      const name = row.name ?? '-';
+      const costPrice = getValue(row, 'costPrice', 'cost_price', 'cost');
+      const profitMargin = getValue(row, 'profitMargin', 'profit_margin');
+      const sellingPrice = getValue(row, 'sellingPrice', 'selling_price', 'price');
+      const importDate = getValue(row, 'importDate', 'import_date') || '-';
+      const expiryDate = getValue(row, 'expiryDate', 'expiry_date', 'exp') || '-';
+      const size = row.size || (row.volumeValue ? `${row.volumeValue} ${row.volumeUnit || ''}` : '-');
+      const stock = row.stock ?? 0;
+
+      return `
+        <tr>
+          <td>${id}</td>
+          <td><code>${barcode}</code></td>
+          <td>${lotNo}</td>
+          <td><b>${brand}</b></td>
+          <td>${name}</td>
+          <td>${costPrice !== null ? costPrice + ' ฿' : '-'}</td>
+          <td>${profitMargin !== null ? profitMargin + '%' : '-'}</td>
+          <td style="color:#27ae60; font-weight:bold;">${sellingPrice !== null ? sellingPrice + ' ฿' : '-'}</td>
+          <td>${importDate}</td>
+          <td>${expiryDate}</td>
+          <td>${size}</td>
+          <td><b>${stock}</b></td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-action btn-edit" onclick="openEditModal('${row.id}')">✏️</button>
+              <button class="btn-action btn-delete" onclick="deleteProduct('${row.id}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    console.error('Error fetching database table:', err);
+  }
+}
+
 function openEditModal(id) {
   const item = productsCache.find(p => String(p.id) === String(id));
   if (!item) return;
@@ -281,14 +356,14 @@ function openEditModal(id) {
   document.getElementById('editId').value = item.id;
   document.getElementById('editBrand').value = item.brand || '';
   document.getElementById('editName').value = item.name || '';
-  document.getElementById('editCostPrice').value = item.costPrice ?? item.cost_price ?? '';
-  document.getElementById('editProfitMargin').value = item.profitMargin ?? item.profit_margin ?? 60;
-  document.getElementById('editSellingPrice').value = item.sellingPrice ?? item.selling_price ?? '';
-  document.getElementById('editLotNo').value = item.lotNo ?? item.lot_no ?? '';
+  document.getElementById('editCostPrice').value = getValue(item, 'costPrice', 'cost_price', 'cost') || '';
+  document.getElementById('editProfitMargin').value = getValue(item, 'profitMargin', 'profit_margin') || 60;
+  document.getElementById('editSellingPrice').value = getValue(item, 'sellingPrice', 'selling_price', 'price') || '';
+  document.getElementById('editLotNo').value = getValue(item, 'lotNo', 'lot_no') || '';
   document.getElementById('editStock').value = item.stock ?? 0;
-  document.getElementById('editImportDate').value = item.importDate ?? item.import_date ?? '';
-  document.getElementById('editExpiryDate').value = item.expiryDate ?? item.expiry_date ?? '';
-  document.getElementById('editSize').value = item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit}` : '');
+  document.getElementById('editImportDate').value = getValue(item, 'importDate', 'import_date') || '';
+  document.getElementById('editExpiryDate').value = getValue(item, 'expiryDate', 'expiry_date', 'exp') || '';
+  document.getElementById('editSize').value = item.size || (item.volumeValue ? `${item.volumeValue} ${item.volumeUnit || ''}` : '');
 
   document.getElementById('editModal').style.display = 'flex';
 }
@@ -382,7 +457,7 @@ async function handleAddProduct(event) {
 
 function openBarcodeModal(product) {
   document.getElementById('modalBarcodeText').innerText = product.barcode;
-  document.getElementById('modalLotText').innerText = product.lotNo || '-';
+  document.getElementById('modalLotText').innerText = getValue(product, 'lotNo', 'lot_no') || '-';
   JsBarcode("#modalBarcodeCanvas", product.barcode, {
     format: "CODE128",
     width: 2,
@@ -398,7 +473,7 @@ function closeModal() {
 
 function triggerPrintFromModal() {
   if (lastSavedProduct) {
-    printBarcode(lastSavedProduct.brand, lastSavedProduct.name, lastSavedProduct.barcode, lastSavedProduct.lotNo);
+    printBarcode(lastSavedProduct.brand, lastSavedProduct.name, lastSavedProduct.barcode, getValue(lastSavedProduct, 'lotNo', 'lot_no'));
   }
 }
 
@@ -476,7 +551,8 @@ async function onScanSuccess(decodedText) {
     if (item) {
       if (item.stock > 0) {
         const productName = `${item.brand || ''} ${item.name || ''}`.trim();
-        const lotText = item.lotNo ? ` (Lot: ${item.lotNo})` : '';
+        const lotNo = getValue(item, 'lotNo', 'lot_no');
+        const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
 
         const confirmCut = confirm(`🎯 สแกนพบสินค้า!\n\nต้องการตัดสต็อก (-1) ของ:\n${productName}${lotText}\n\nคงเหลือปัจจุบัน: ${item.stock} ชิ้น หรือไม่?`);
         
@@ -508,42 +584,13 @@ async function reduceStockDirect(id, currentStock) {
   }
 }
 
-async function fetchDatabaseTable() {
-  try {
-    const res = await fetch(`${API_URL}/products`);
-    const products = await res.json();
-    const header = document.getElementById('dbTableHeader');
-    const body = document.getElementById('dbTableBody');
-
-    header.innerHTML = `<tr>${dbColumns.map(col => `<th>${col}</th>`).join('')}<th>จัดการ</th></tr>`;
-
-    if (!products || products.length === 0) {
-      body.innerHTML = `<tr><td colspan="${dbColumns.length + 1}" style="text-align: center;">ไม่มีข้อมูล</td></tr>`;
-      return;
-    }
-
-    body.innerHTML = products.map(row => `
-      <tr>
-        ${dbColumns.map(col => `<td>${row[col] !== undefined && row[col] !== null ? row[col] : '-'}</td>`).join('')}
-        <td>
-          <div style="display: flex; gap: 4px;">
-            <button class="btn-action btn-edit" onclick="openEditModal('${row.id}')">✏️</button>
-            <button class="btn-action btn-delete" onclick="deleteProduct('${row.id}')">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    console.error(err);
-  }
-}
-
 async function reduceStock(id, currentStock) {
   if (currentStock <= 0) return alert('⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!');
 
   const item = productsCache.find(p => String(p.id) === String(id));
   const productName = item ? `${item.brand || ''} ${item.name || ''}`.trim() : 'สินค้า';
-  const lotText = item && item.lotNo ? ` (Lot: ${item.lotNo})` : '';
+  const lotNo = getValue(item, 'lotNo', 'lot_no');
+  const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
 
   const confirmCut = confirm(`❓ ยืนยันการตัดสต็อก (-1)\n\nสินค้า: ${productName}${lotText}\nคงเหลือปัจจุบัน: ${currentStock} ชิ้น`);
   if (!confirmCut) return;
