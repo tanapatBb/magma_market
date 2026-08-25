@@ -40,13 +40,12 @@
         <div class="form-row">
           <div class="form-group">
             <label>ยี่ห้อ (Brand)</label>
-            <input type="text" id="brand" placeholder="เช่น SmartHeart" required list="brandSuggestions">
+            <input type="text" id="brand" placeholder="เช่น Honda" required list="brandSuggestions">
             <datalist id="brandSuggestions"></datalist>
           </div>
           <div class="form-group">
             <label>ชื่อสูตร/สินค้า</label>
-            <input type="text" id="name" placeholder="เช่น อาหารสุนัขโต" required list="nameSuggestions">
-            <datalist id="nameSuggestions"></datalist>
+            <input type="text" id="name" placeholder="เช่น Brio
           </div>
         </div>
 
@@ -108,8 +107,8 @@
           <div class="form-group">
             <label>หน่วย</label>
             <select id="volumeUnit">
-              <option value="kg">kg</option>
               <option value="g">g</option>
+              <option value="kg">kg</option>
               <option value="ถุง">ถุง/ชิ้น</option>
             </select>
           </div>
@@ -238,17 +237,28 @@
           <input type="number" step="any" id="editCostPrice" oninput="calculateSellingPrice(true)">
         </div>
         <div class="form-group">
-          <label>📈 บวกกำไร (%)</label>
-          <select id="editProfitMargin" onchange="calculateSellingPrice(true)">
-            <option value="40">40%</option>
-            <option value="50">50%</option>
-            <option value="60">60%</option>
-            <option value="70">70%</option>
-            <option value="80">80%</option>
-            <option value="90">90%</option>
-            <option value="100">100%</option>
-          </select>
-        </div>
+  <label>📈 บวกกำไร (%)</label>
+  <select id="editProfitMargin" onchange="handleProfitMarginChange(true)">
+    <option value="none">ไม่ระบุ</option>
+    <option value="40">40%</option>
+    <option value="50">50%</option>
+    <option value="60" selected>60%</option>
+    <option value="70">70%</option>
+    <option value="80">80%</option>
+    <option value="90">90%</option>
+    <option value="100">100%</option>
+    <option value="custom">กรอกด้วยตัวเอง...</option>
+  </select>
+  
+  <!-- ช่องกรอกตัวเลขเอง (ซ่อนไว้เริ่มต้น) -->
+  <input 
+    type="number" 
+    id="editCustomProfitMargin" 
+    placeholder="ระบุ % กำไร" 
+    style="display: none; margin-top: 8px;" 
+    oninput="calculateSellingPrice(true)"
+  />
+</div>
         <div class="form-group">
           <label>🏷️ ราคาขาย</label>
           <input type="number" step="any" id="editSellingPrice" readonly style="background: #f0f0f0; font-weight: bold; color: #27ae60;">

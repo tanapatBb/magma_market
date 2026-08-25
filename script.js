@@ -5,7 +5,7 @@ let lastSavedProduct = null;
 let productsCache = [];
 let myChart = null;
 
-// Helper Function ดึงค่า Key แบบยืดหยุ่นสูงสุด ดักจับทุกรูปแบบชื่อฟิลด์
+// Helper Function ดึงค่า Key แบบยืดหยุ่นสูงสุด
 function getValue(obj, ...keys) {
   if (!obj) return null;
   for (const key of keys) {
@@ -58,20 +58,75 @@ function previewImage(event) {
   }
 }
 
+// จัดการเมื่อเปลี่ยนตัวเลือก % กำไร (รองรับ 'none' และ 'custom')
+function handleProfitMarginChange(isEdit = false) {
+  const selectId = isEdit ? 'editProfitMargin' : 'profitMargin';
+  const customInputId = isEdit ? 'editCustomProfitMargin' : 'customProfitMargin';
+  
+  const selectEl = document.getElementById(selectId);
+  const customInputEl = document.getElementById(customInputId);
+
+  if (selectEl && customInputEl) {
+    if (selectEl.value === 'custom') {
+      customInputEl.style.display = 'block';
+      customInputEl.focus();
+    } else {
+      customInputEl.style.display = 'none';
+      customInputEl.value = '';
+    }
+  }
+
+  calculateSellingPrice(isEdit);
+}
+
+// คำนวณราคาขายอัตโนมัติ
 function calculateSellingPrice(isEdit = false) {
   const costId = isEdit ? 'editCostPrice' : 'costPrice';
-  const marginId = isEdit ? 'editProfitMargin' : 'profitMargin';
+  const selectId = isEdit ? 'editProfitMargin' : 'profitMargin';
+  const customInputId = isEdit ? 'editCustomProfitMargin' : 'customProfitMargin';
   const sellingId = isEdit ? 'editSellingPrice' : 'sellingPrice';
 
-  const cost = parseFloat(document.getElementById(costId).value) || 0;
-  const margin = parseFloat(document.getElementById(marginId).value) || 0;
+  const costEl = document.getElementById(costId);
+  const selectEl = document.getElementById(selectId);
+  const customInputEl = document.getElementById(customInputId);
+  const sellingEl = document.getElementById(sellingId);
+
+  if (!costEl || !sellingEl) return;
+
+  const cost = parseFloat(costEl.value) || 0;
+  const selectVal = selectEl ? selectEl.value : '60';
+  let margin = 0;
+
+  if (selectVal === 'none') {
+    margin = 0;
+  } else if (selectVal === 'custom') {
+    margin = parseFloat(customInputEl ? customInputEl.value : 0) || 0;
+  } else {
+    margin = parseFloat(selectVal) || 0;
+  }
 
   if (cost > 0) {
     const sellingPrice = cost + (cost * (margin / 100));
-    document.getElementById(sellingId).value = sellingPrice.toFixed(2);
+    sellingEl.value = sellingPrice.toFixed(2);
   } else {
-    document.getElementById(sellingId).value = '';
+    sellingEl.value = '';
   }
+}
+
+// ดึงค่า % กำไรสุทธิเพื่อส่งบันทึก API
+function getSelectedProfitMargin(isEdit = false) {
+  const selectId = isEdit ? 'editProfitMargin' : 'profitMargin';
+  const customInputId = isEdit ? 'editCustomProfitMargin' : 'customProfitMargin';
+
+  const selectEl = document.getElementById(selectId);
+  const customInputEl = document.getElementById(customInputId);
+
+  if (!selectEl) return 0;
+  const val = selectEl.value;
+
+  if (val === 'none') return 0;
+  if (val === 'custom') return parseFloat(customInputEl ? customInputEl.value : 0) || 0;
+  return parseFloat(val) || 0;
 }
 
 function addMonthsToExpiry(months, isEdit = false) {
@@ -152,12 +207,10 @@ function filterProducts() {
   renderGroupedProducts(filtered);
 }
 
-// แสดงผล Card สินค้า (กรองสินค้าสต็อก 0 ออก)
 function renderGroupedProducts(products) {
   const container = document.getElementById('productList');
   if (!container) return;
 
-  // กรองเฉพาะรายการที่สต็อกมากกว่า 0 เท่านั้น
   const activeProducts = products.filter(item => Number(item.stock || 0) > 0);
 
   if (!activeProducts || activeProducts.length === 0) {
@@ -197,7 +250,7 @@ function renderGroupedProducts(products) {
             ${group.lots.map(lot => {
               const cost = getValue(lot, 'costPrice', 'cost_price', 'cost', 'costprice');
               const selling = getValue(lot, 'sellingPrice', 'selling_price', 'price', 'sellingprice');
-              const margin = getValue(lot, 'profitMargin', 'profit_margin', 'profit') || 60;
+              const margin = getValue(lot, 'profitMargin', 'profit_margin', 'profit');
               const expDate = getValue(lot, 'expiryDate', 'expiry_date', 'exp', 'expiry') || '-';
               const importDate = getValue(lot, 'importDate', 'import_date', 'import') || '-';
               const lotNo = getValue(lot, 'lotNo', 'lot_no', 'lot') || 'ไม่ระบุล็อต';
@@ -212,7 +265,7 @@ function renderGroupedProducts(products) {
                   </div>
                   
                   <div class="lot-details">
-                    <p>💰 ทุน: <b>${cost ? cost + ' ฿' : '-'}</b> | ขาย: <b style="color:#27ae60">${selling ? selling + ' ฿' : '-'}</b> (${margin}%)</p>
+                    <p>💰 ทุน: <b>${cost ? cost + ' ฿' : '-'}</b> | ขาย: <b style="color:#27ae60">${selling ? selling + ' ฿' : '-'}</b> (${margin !== null && margin !== undefined ? margin + '%' : '-'})</p>
                     <p>📅 รับเข้า: ${importDate} | EXP: ${expDate} <span style="color:${expStatus.color}; font-weight:bold;">(${expStatus.text})</span></p>
                   </div>
 
@@ -291,7 +344,6 @@ function renderDashboard() {
   `).join('');
 }
 
-// ตาราง Database ดึงค่าแบบ Fallback ลึกที่สุด
 async function fetchDatabaseTable() {
   try {
     const res = await fetch(`${API_URL}/products`);
@@ -334,7 +386,7 @@ async function fetchDatabaseTable() {
           <td><b>${brand}</b></td>
           <td>${name}</td>
           <td>${costPrice ? costPrice + ' ฿' : '-'}</td>
-          <td>${profitMargin ? profitMargin + '%' : '-'}</td>
+          <td>${profitMargin !== null && profitMargin !== undefined ? profitMargin + '%' : '-'}</td>
           <td style="color:#27ae60; font-weight:bold;">${sellingPrice ? sellingPrice + ' ฿' : '-'}</td>
           <td>${importDate}</td>
           <td>${expiryDate}</td>
@@ -363,7 +415,30 @@ function openEditModal(id) {
   document.getElementById('editBrand').value = item.brand || '';
   document.getElementById('editName').value = item.name || '';
   document.getElementById('editCostPrice').value = getValue(item, 'costPrice', 'cost_price', 'cost', 'costprice') || '';
-  document.getElementById('editProfitMargin').value = getValue(item, 'profitMargin', 'profit_margin', 'profit') || 60;
+  
+  const margin = getValue(item, 'profitMargin', 'profit_margin', 'profit');
+  const editMarginSelect = document.getElementById('editProfitMargin');
+  const editCustomInput = document.getElementById('editCustomProfitMargin');
+
+  if (editMarginSelect) {
+    if (margin === 0 || margin === '0') {
+      editMarginSelect.value = 'none';
+      if (editCustomInput) editCustomInput.style.display = 'none';
+    } else if (['40', '50', '60', '70', '80', '90', '100'].includes(String(margin))) {
+      editMarginSelect.value = String(margin);
+      if (editCustomInput) editCustomInput.style.display = 'none';
+    } else if (margin !== null && margin !== undefined) {
+      editMarginSelect.value = 'custom';
+      if (editCustomInput) {
+        editCustomInput.style.display = 'block';
+        editCustomInput.value = margin;
+      }
+    } else {
+      editMarginSelect.value = '60';
+      if (editCustomInput) editCustomInput.style.display = 'none';
+    }
+  }
+
   document.getElementById('editSellingPrice').value = getValue(item, 'sellingPrice', 'selling_price', 'price', 'sellingprice') || '';
   document.getElementById('editLotNo').value = getValue(item, 'lotNo', 'lot_no', 'lot') || '';
   document.getElementById('editStock').value = item.stock ?? 0;
@@ -386,7 +461,7 @@ async function handleUpdateProduct(event) {
     brand: document.getElementById('editBrand').value,
     name: document.getElementById('editName').value,
     costPrice: Number(document.getElementById('editCostPrice').value),
-    profitMargin: Number(document.getElementById('editProfitMargin').value),
+    profitMargin: getSelectedProfitMargin(true),
     sellingPrice: Number(document.getElementById('editSellingPrice').value),
     lotNo: document.getElementById('editLotNo').value,
     stock: Number(document.getElementById('editStock').value),
@@ -422,7 +497,7 @@ async function handleAddProduct(event) {
     brand: document.getElementById('brand').value,
     name: document.getElementById('name').value,
     costPrice: Number(document.getElementById('costPrice').value),
-    profitMargin: Number(document.getElementById('profitMargin').value),
+    profitMargin: getSelectedProfitMargin(false),
     sellingPrice: Number(document.getElementById('sellingPrice').value),
     volumeValue: document.getElementById('volumeValue').value,
     volumeUnit: document.getElementById('volumeUnit').value,
