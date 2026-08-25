@@ -26,9 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function switchTab(tabId) {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
+  
+  const targetTab = document.getElementById(tabId);
+  if (targetTab) targetTab.style.display = 'block';
   
   const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => {
     const onclickAttr = btn.getAttribute('onclick');
@@ -42,7 +44,7 @@ function switchTab(tabId) {
 
 function toggleAddForm() {
   const form = document.getElementById('addProductFormCard');
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
 }
 
 function previewImage(event) {
@@ -51,14 +53,16 @@ function previewImage(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
       currentImageData = e.target.result;
-      document.getElementById('imagePreview').src = currentImageData;
-      document.getElementById('imagePreviewContainer').style.display = 'block';
+      const imgPreview = document.getElementById('imagePreview');
+      const container = document.getElementById('imagePreviewContainer');
+      if (imgPreview) imgPreview.src = currentImageData;
+      if (container) container.style.display = 'block';
     };
     reader.readAsDataURL(file);
   }
 }
 
-// จัดการเมื่อเปลี่ยนตัวเลือก % กำไร (รองรับ 'none' และ 'custom')
+// จัดการเมื่อเปลี่ยนตัวเลือก % กำไร
 function handleProfitMarginChange(isEdit = false) {
   const selectId = isEdit ? 'editProfitMargin' : 'profitMargin';
   const customInputId = isEdit ? 'editCustomProfitMargin' : 'customProfitMargin';
@@ -113,7 +117,6 @@ function calculateSellingPrice(isEdit = false) {
   }
 }
 
-// ดึงค่า % กำไรสุทธิเพื่อส่งบันทึก API
 function getSelectedProfitMargin(isEdit = false) {
   const selectId = isEdit ? 'editProfitMargin' : 'profitMargin';
   const customInputId = isEdit ? 'editCustomProfitMargin' : 'customProfitMargin';
@@ -133,11 +136,16 @@ function addMonthsToExpiry(months, isEdit = false) {
   const importInputId = isEdit ? 'editImportDate' : 'importDate';
   const expiryInputId = isEdit ? 'editExpiryDate' : 'expiryDate';
   
-  const importVal = document.getElementById(importInputId).value;
+  const importInput = document.getElementById(importInputId);
+  const expiryInput = document.getElementById(expiryInputId);
+
+  if (!expiryInput) return;
+
+  const importVal = importInput ? importInput.value : '';
   const baseDate = importVal ? new Date(importVal) : new Date();
 
   baseDate.setMonth(baseDate.getMonth() + months);
-  document.getElementById(expiryInputId).value = baseDate.toISOString().split('T')[0];
+  expiryInput.value = baseDate.toISOString().split('T')[0];
 }
 
 function getExpiryStatus(expiryDateString) {
@@ -195,8 +203,11 @@ function populateSuggestions(products) {
 }
 
 function filterProducts() {
-  const keyword = document.getElementById('searchKeyword').value.toLowerCase();
-  const selectedBrand = document.getElementById('filterBrandSelect').value;
+  const searchInput = document.getElementById('searchKeyword');
+  const brandSelect = document.getElementById('filterBrandSelect');
+
+  const keyword = searchInput ? searchInput.value.toLowerCase() : '';
+  const selectedBrand = brandSelect ? brandSelect.value : '';
 
   const filtered = productsCache.filter(item => {
     const matchName = (item.name || '').toLowerCase().includes(keyword) || (item.brand || '').toLowerCase().includes(keyword);
@@ -309,47 +320,61 @@ function renderDashboard() {
 
   const profit = totalSelling - totalCost;
 
-  document.getElementById('totalCostVal').innerText = `${totalCost.toLocaleString('th-TH')} ฿`;
-  document.getElementById('totalSellingVal').innerText = `${totalSelling.toLocaleString('th-TH')} ฿`;
-  document.getElementById('totalProfitVal').innerText = `${profit.toLocaleString('th-TH')} ฿`;
+  const costValEl = document.getElementById('totalCostVal');
+  const sellingValEl = document.getElementById('totalSellingVal');
+  const profitValEl = document.getElementById('totalProfitVal');
 
-  const ctx = document.getElementById('financialChart').getContext('2d');
-  if (myChart) myChart.destroy();
+  if (costValEl) costValEl.innerText = `${totalCost.toLocaleString('th-TH')} ฿`;
+  if (sellingValEl) sellingValEl.innerText = `${totalSelling.toLocaleString('th-TH')} ฿`;
+  if (profitValEl) profitValEl.innerText = `${profit.toLocaleString('th-TH')} ฿`;
 
-  myChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['ราคาทุนรวม', 'กำไรคาดการณ์'],
-      datasets: [{
-        data: [totalCost, profit > 0 ? profit : 0],
-        backgroundColor: ['#3498db', '#2ecc71']
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' }
+  // วาดกราฟ
+  const chartCanvas = document.getElementById('financialChart');
+  if (chartCanvas && typeof Chart !== 'undefined') {
+    const ctx = chartCanvas.getContext('2d');
+    if (myChart) myChart.destroy();
+
+    myChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['ราคาทุนรวม', 'กำไรคาดการณ์'],
+        datasets: [{
+          data: [totalCost, profit > 0 ? profit : 0],
+          backgroundColor: ['#3498db', '#2ecc71']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' }
+        }
       }
-    }
-  });
+    });
+  }
 
   const tbody = document.getElementById('dashboardTableBody');
-  tbody.innerHTML = Object.keys(summaryMap).map(key => `
-    <tr>
-      <td><b>${key}</b></td>
-      <td style="text-align:center;">${summaryMap[key].stock}</td>
-      <td>${summaryMap[key].costTotal.toLocaleString()} ฿</td>
-      <td style="color:#27ae60; font-weight:bold;">${summaryMap[key].sellingTotal.toLocaleString()} ฿</td>
-    </tr>
-  `).join('');
+  if (tbody) {
+    tbody.innerHTML = Object.keys(summaryMap).map(key => `
+      <tr>
+        <td><b>${key}</b></td>
+        <td style="text-align:center;">${summaryMap[key].stock}</td>
+        <td>${summaryMap[key].costTotal.toLocaleString()} ฿</td>
+        <td style="color:#27ae60; font-weight:bold;">${summaryMap[key].sellingTotal.toLocaleString()} ฿</td>
+      </tr>
+    `).join('');
+  }
 }
 
 async function fetchDatabaseTable() {
   try {
     const res = await fetch(`${API_URL}/products`);
     const products = await res.json();
+    productsCache = products;
+
     const header = document.getElementById('dbTableHeader');
     const body = document.getElementById('dbTableBody');
+
+    if (!header || !body) return;
 
     const headers = [
       'ID', 'Barcode', 'Lot No', 'Brand', 'Name', 
@@ -450,7 +475,8 @@ function openEditModal(id) {
 }
 
 function closeEditModal() {
-  document.getElementById('editModal').style.display = 'none';
+  const modal = document.getElementById('editModal');
+  if (modal) modal.style.display = 'none';
 }
 
 async function handleUpdateProduct(event) {
@@ -520,9 +546,11 @@ async function handleAddProduct(event) {
       document.getElementById('productForm').reset();
       
       const today = new Date().toISOString().split('T')[0];
-      document.getElementById('importDate').value = today;
+      const importDateInput = document.getElementById('importDate');
+      if (importDateInput) importDateInput.value = today;
 
-      document.getElementById('imagePreviewContainer').style.display = 'none';
+      const imgContainer = document.getElementById('imagePreviewContainer');
+      if (imgContainer) imgContainer.style.display = 'none';
       currentImageData = '';
       toggleAddForm();
 
@@ -537,19 +565,26 @@ async function handleAddProduct(event) {
 }
 
 function openBarcodeModal(product) {
-  document.getElementById('modalBarcodeText').innerText = product.barcode;
-  document.getElementById('modalLotText').innerText = getValue(product, 'lotNo', 'lot_no', 'lot') || '-';
+  const barcodeText = document.getElementById('modalBarcodeText');
+  const lotText = document.getElementById('modalLotText');
+  const modal = document.getElementById('barcodeModal');
+
+  if (barcodeText) barcodeText.innerText = product.barcode;
+  if (lotText) lotText.innerText = getValue(product, 'lotNo', 'lot_no', 'lot') || '-';
+
   JsBarcode("#modalBarcodeCanvas", product.barcode, {
     format: "CODE128",
     width: 2,
     height: 40,
     displayValue: true
   });
-  document.getElementById('barcodeModal').style.display = 'flex';
+
+  if (modal) modal.style.display = 'flex';
 }
 
 function closeModal() {
-  document.getElementById('barcodeModal').style.display = 'none';
+  const modal = document.getElementById('barcodeModal');
+  if (modal) modal.style.display = 'none';
 }
 
 function triggerPrintFromModal() {
@@ -559,9 +594,13 @@ function triggerPrintFromModal() {
 }
 
 function printBarcode(brand, name, barcodeCode, lotNo) {
-  document.getElementById('printBrand').innerText = brand || 'Magma Market';
-  document.getElementById('printName').innerText = name || 'สินค้า';
-  document.getElementById('printLot').innerText = `LOT: ${lotNo || '-'}`;
+  const printBrand = document.getElementById('printBrand');
+  const printName = document.getElementById('printName');
+  const printLot = document.getElementById('printLot');
+
+  if (printBrand) printBrand.innerText = brand || 'Magma Market';
+  if (printName) printName.innerText = name || 'สินค้า';
+  if (printLot) printLot.innerText = `LOT: ${lotNo || '-'}`;
 
   JsBarcode("#barcodeCanvas", barcodeCode, {
     format: "CODE128",
@@ -579,6 +618,8 @@ function printBarcode(brand, name, barcodeCode, lotNo) {
 
 async function toggleScanner() {
   const container = document.getElementById('reader-container');
+  if (!container) return;
+
   if (container.style.display === 'none') {
     container.style.display = 'block';
     
@@ -619,7 +660,8 @@ async function stopScanner() {
   if (html5QrCode && html5QrCode.isScanning) {
     await html5QrCode.stop();
   }
-  document.getElementById('reader-container').style.display = 'none';
+  const container = document.getElementById('reader-container');
+  if (container) container.style.display = 'none';
 }
 
 async function onScanSuccess(decodedText) {

@@ -2,334 +2,305 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Magma Market - Portal Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magma Market - Stock Management</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- External Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<div class="container main-ui">
-  <h1>🐾 Magma Market Portal</h1>
+  <!-- Top Navbar / Header -->
+  <header class="header">
+    <h1>🔥 Magma Market</h1>
+    <div class="nav-buttons">
+      <button class="tab-btn active" onclick="switchTab('stock-tab')">📦 สต็อกสินค้า</button>
+      <button class="tab-btn" onclick="switchTab('dashboard-tab')">📊 สรุปรายงาน</button>
+      <button class="tab-btn" onclick="switchTab('database-tab')">🗄️ Database</button>
+    </div>
+  </header>
 
-  <div class="tab-menu">
-    <button class="tab-btn active" onclick="switchTab('stock-tab')">📦 คลังสินค้า</button>
-    <button class="tab-btn" onclick="switchTab('dashboard-tab')">📊 Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('database-tab')">⚙️ Database</button>
-  </div>
+  <main class="container">
 
-  <!-- TAB: STOCK -->
-  <div id="stock-tab" class="tab-content active">
-    <div class="card-box scanner-card">
-      <button class="btn btn-secondary btn-block" onclick="toggleScanner()">📷 สแกนบาร์โค้ดตัดสต็อก (-1)</button>
-      <div id="reader-container" style="display: none; margin-top: 15px;">
-        <div id="reader"></div>
-        <button class="btn btn-delete btn-block" onclick="stopScanner()" style="margin-top: 10px;">❌ ปิดกล้อง</button>
+    <!-- TAB 1: STOCK MANAGEMENT -->
+    <section id="stock-tab" class="tab-content active">
+      <div class="action-bar">
+        <button class="btn btn-primary" onclick="toggleAddForm()">➕ เพิ่มสินค้าใหม่</button>
+        <button class="btn btn-secondary" onclick="toggleScanner()">📷 สแกนบาร์โค้ด</button>
       </div>
-    </div>
 
-    <div style="margin-bottom: 15px;">
-      <button class="btn btn-primary btn-block" onclick="toggleAddForm()">➕ เพิ่มรายการสินค้าใหม่ (คลิกเปิด/ปิด)</button>
-    </div>
+      <!-- Scanner Container -->
+      <div id="reader-container" style="display: none; margin-bottom: 20px;">
+        <div id="reader"></div>
+      </div>
 
-    <div class="card-box" id="addProductFormCard" style="display: none;">
-      <h2>➕ เพิ่มสินค้าเข้าสต็อก</h2>
-      <form id="productForm" onsubmit="handleAddProduct(event)">
-        <div class="form-row">
-          <div class="form-group">
-            <label>ยี่ห้อ (Brand)</label>
-            <input type="text" id="brand" placeholder="เช่น Honda" required list="brandSuggestions">
-            <datalist id="brandSuggestions"></datalist>
-          </div>
-          <div class="form-group">
-            <label>ชื่อสูตร/สินค้า</label>
-            <input type="text" id="name" placeholder="เช่น Brio
-          </div>
-        </div>
+      <!-- Add Product Form (Hidden by default) -->
+      <div id="addProductFormCard" class="card" style="display: none; margin-bottom: 20px;">
+        <h2>➕ เพิ่มรายการสินค้าเข้าสต็อก</h2>
+        <form id="productForm" onsubmit="handleAddProduct(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>ยี่ห้อ (Brand)</label>
+              <input type="text" id="brand" list="brandSuggestions" required placeholder="เช่น Nivea, Vaseline">
+              <datalist id="brandSuggestions"></datalist>
+            </div>
+            
+            <div class="form-group">
+              <label>ชื่อสินค้า (Product Name)</label>
+              <input type="text" id="name" list="nameSuggestions" required placeholder="เช่น ครีมอาบน้ำ">
+              <datalist id="nameSuggestions"></datalist>
+            </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>💰 ราคาทุน (บาท)</label>
-            <input type="number" step="any" id="costPrice" placeholder="0.00" oninput="calculateSellingPrice()" required>
-          </div>
-          <div class="form-group">
-            <label>📈 บวกกำไร (%)</label>
-            <select id="profitMargin" onchange="calculateSellingPrice()">
-              <option value="40">40%</option>
-              <option value="50">50%</option>
-              <option value="60" selected>60%</option>
-              <option value="70">70%</option>
-              <option value="80">80%</option>
-              <option value="90">90%</option>
-              <option value="100">100%</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>🏷️ ราคาขายตั้งต้น</label>
-            <input type="number" step="any" id="sellingPrice" placeholder="0.00" readonly style="background: #f0f0f0; font-weight: bold; color: #27ae60;">
-          </div>
-        </div>
+            <div class="form-group">
+              <label>เลขล็อต (Lot No.)</label>
+              <input type="text" id="lotNo" placeholder="เช่น LOT202601" required>
+            </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>เลขล็อตนำเข้า (Lot No.)</label>
-            <input type="text" id="lotNo" placeholder="เช่น LOT-20260801" required>
-          </div>
-          <div class="form-group">
-            <label>จำนวนสต็อก (ถุง/ชิ้น)</label>
-            <input type="number" id="stock" placeholder="0" required>
-          </div>
-        </div>
+            <div class="form-group">
+              <label>ขนาด / ปริมาณ</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="number" id="volumeValue" placeholder="ตัวเลข เช่น 500" style="flex: 2;">
+                <input type="text" id="volumeUnit" placeholder="หน่วย เช่น ml, g" style="flex: 1;">
+              </div>
+            </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>📅 วันที่รับเข้า</label>
-            <input type="date" id="importDate" required>
-          </div>
-          <div class="form-group">
-            <label>⚠️ วันที่หมดอายุ (EXP)</label>
-            <input type="date" id="expiryDate" required>
-            <div class="quick-exp-btns">
-              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(3)">+3M</button>
-              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(6)">+6M</button>
-              <button type="button" class="btn-quick" onclick="addMonthsToExpiry(12)">+1Y</button>
+            <div class="form-group">
+              <label>ราคาทุน (บาท)</label>
+              <input type="number" step="0.01" id="costPrice" required oninput="calculateSellingPrice(false)">
+            </div>
+
+            <div class="form-group">
+              <label>📈 บวกกำไร (%)</label>
+              <select id="profitMargin" onchange="handleProfitMarginChange(false)">
+                <option value="none">ไม่ระบุ</option>
+                <option value="40">40%</option>
+                <option value="50">50%</option>
+                <option value="60" selected>60%</option>
+                <option value="70">70%</option>
+                <option value="80">80%</option>
+                <option value="90">90%</option>
+                <option value="100">100%</option>
+                <option value="custom">กรอกด้วยตัวเอง...</option>
+              </select>
+              <input 
+                type="number" 
+                id="customProfitMargin" 
+                placeholder="ระบุ % กำไร" 
+                style="display: none; margin-top: 8px;" 
+                oninput="calculateSellingPrice(false)"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>ราคาขาย (บาท)</label>
+              <input type="number" step="0.01" id="sellingPrice" required placeholder="คำนวณอัตโนมัติ">
+            </div>
+
+            <div class="form-group">
+              <label>จำนวนสต็อก (ชิ้น)</label>
+              <input type="number" id="stock" required min="1" value="1">
+            </div>
+
+            <div class="form-group">
+              <label>วันที่รับเข้า</label>
+              <input type="date" id="importDate" required>
+            </div>
+
+            <div class="form-group">
+              <label>วันหมดอายุ (EXP)</label>
+              <input type="date" id="expiryDate">
+              <div style="margin-top: 5px; display: flex; gap: 5px;">
+                <button type="button" class="btn-xs" onclick="addMonthsToExpiry(6, false)">+6 เดือน</button>
+                <button type="button" class="btn-xs" onclick="addMonthsToExpiry(12, false)">+1 ปี</button>
+                <button type="button" class="btn-xs" onclick="addMonthsToExpiry(24, false)">+2 ปี</button>
+              </div>
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+              <label>รูปภาพสินค้า</label>
+              <input type="file" accept="image/*" onchange="previewImage(event)">
+              <div id="imagePreviewContainer" style="display: none; margin-top: 10px;">
+                <img id="imagePreview" src="" alt="Preview" style="max-height: 120px; border-radius: 6px;">
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>ขนาด/ปริมาตร</label>
-            <input type="number" step="any" id="volumeValue" placeholder="เช่น 1.2">
+          <div style="margin-top: 15px; text-align: right;">
+            <button type="button" class="btn btn-secondary" onclick="toggleAddForm()">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">💾 บันทึกสินค้า</button>
           </div>
-          <div class="form-group">
-            <label>หน่วย</label>
-            <select id="volumeUnit">
-              <option value="g">g</option>
-              <option value="kg">kg</option>
-              <option value="ถุง">ถุง/ชิ้น</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 15px;">
-          <label>📸 รูปสินค้า</label>
-          <input type="file" id="productImage" accept="image/*" onchange="previewImage(event)">
-          <div id="imagePreviewContainer" style="margin-top: 10px; display: none;">
-            <img id="imagePreview" src="" alt="Preview" style="max-width: 100px; border-radius: 8px;">
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block">💾 บันทึกลง Database</button>
-      </form>
-    </div>
-
-    <div class="card-box" style="padding: 12px;">
-      <div class="form-row" style="margin-bottom: 0;">
-        <div class="form-group">
-          <label>🔍 ค้นหาตามชื่อสินค้า</label>
-          <input type="text" id="searchKeyword" placeholder="พิมพ์ชื่อสินค้า..." oninput="filterProducts()">
-        </div>
-        <div class="form-group">
-          <label>🏷️ กรองตามยี่ห้อ</label>
-          <select id="filterBrandSelect" onchange="filterProducts()">
-            <option value="">ทั้งหมด (All Brands)</option>
-          </select>
-        </div>
+        </form>
       </div>
-    </div>
 
-    <div class="card-box">
-      <h2>📦 รายการสินค้าคงเหลือ (จัดกลุ่มตามยี่ห้อ/ชื่อ)</h2>
-      <div id="productList" class="product-grid">
-        <div class="empty-state">กำลังโหลดข้อมูล...</div>
+      <!-- Filter / Search Section -->
+      <div class="search-box card" style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <input type="text" id="searchKeyword" placeholder="🔍 ค้นหาชื่อสินค้า หรือยี่ห้อ..." oninput="filterProducts()">
+        <select id="filterBrandSelect" onchange="filterProducts()" style="width: 200px;">
+          <option value="">ทั้งหมด (All Brands)</option>
+        </select>
       </div>
-    </div>
-  </div>
 
-  <!-- TAB: DASHBOARD -->
-  <div id="dashboard-tab" class="tab-content">
-    <div class="card-box">
-      <h2>📈 สรุปภาพรวมมูลค่าสินค้า & การขาย</h2>
-      
-      <div class="dashboard-metrics">
-        <div class="metric-card bg-blue">
-          <span class="metric-title">มูลค่าทุนรวมคงเหลือ</span>
-          <span class="metric-value" id="totalCostVal">0 ฿</span>
+      <!-- Product List Display -->
+      <div id="productList" class="product-grid"></div>
+    </section>
+
+    <!-- TAB 2: DASHBOARD -->
+    <section id="dashboard-tab" class="tab-content" style="display: none;">
+      <div class="dashboard-grid">
+        <div class="card stat-card">
+          <h3>💸 ราคาทุนรวม</h3>
+          <p id="totalCostVal" class="stat-number">0 ฿</p>
         </div>
-        <div class="metric-card bg-green">
-          <span class="metric-title">มูลค่าขายรวมคงเหลือ</span>
-          <span class="metric-value" id="totalSellingVal">0 ฿</span>
+        <div class="card stat-card">
+          <h3>💰 มูลค่าขายรวม</h3>
+          <p id="totalSellingVal" class="stat-number" style="color: #27ae60;">0 ฿</p>
         </div>
-        <div class="metric-card bg-orange">
-          <span class="metric-title">กำไรคาดการณ์</span>
-          <span class="metric-value" id="totalProfitVal">0 ฿</span>
+        <div class="card stat-card">
+          <h3>📈 กำไรคาดการณ์</h3>
+          <p id="totalProfitVal" class="stat-number" style="color: #e67e22;">0 ฿</p>
         </div>
       </div>
 
-      <div style="margin-top: 20px; max-width: 320px; margin-left: auto; margin-right: auto;">
-        <h3 style="text-align: center; font-size: 0.95rem; color: #555; margin-bottom: 10px;">สัดส่วนราคาทุน vs มูลค่าราคาขาย</h3>
-        <canvas id="financialChart"></canvas>
+      <div class="card" style="margin-top: 20px;">
+        <h3>📊 สัดส่วนทางการเงิน</h3>
+        <div style="max-width: 400px; margin: 0 auto;">
+          <canvas id="financialChart"></canvas>
+        </div>
       </div>
-    </div>
 
-    <div class="card-box">
-      <h2>🔥 สถานะสต็อกและสินค้าคงเหลือ</h2>
-      <div class="table-responsive">
-        <table class="db-table">
+      <div class="card" style="margin-top: 20px;">
+        <h3>📋 สรุปรายการสินค้าคงเหลือ</h3>
+        <table class="data-table">
           <thead>
             <tr>
-              <th>ยี่ห้อ/ชื่อสินค้า</th>
-              <th>คงเหลือ (ชิ้น)</th>
+              <th>สินค้า</th>
+              <th style="text-align: center;">คงเหลือ (ชิ้น)</th>
               <th>มูลค่าทุนรวม</th>
               <th>มูลค่าขายรวม</th>
             </tr>
           </thead>
-          <tbody id="dashboardTableBody">
-            <tr><td colspan="4" style="text-align: center;">ไม่มีข้อมูล</td></tr>
-          </tbody>
+          <tbody id="dashboardTableBody"></tbody>
         </table>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- TAB: DATABASE -->
-  <div id="database-tab" class="tab-content">
-    <div class="card-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-        <h2>📊 ตาราง Database (แยกทุกรายการ)</h2>
-        <button class="btn btn-secondary" onclick="fetchDatabaseTable()">🔄 รีเฟรช</button>
-      </div>
-
-      <div class="table-responsive">
-        <table class="db-table" id="dbMainTable">
+    <!-- TAB 3: DATABASE TABLE -->
+    <section id="database-tab" class="tab-content" style="display: none;">
+      <div class="card" style="overflow-x: auto;">
+        <h2>🗄️ ตารางข้อมูลทั้งหมด (Database View)</h2>
+        <table class="data-table">
           <thead id="dbTableHeader"></thead>
           <tbody id="dbTableBody"></tbody>
         </table>
       </div>
-    </div>
-  </div>
-</div>
+    </section>
 
-<!-- Modal แก้ไขสินค้า -->
-<div id="editModal" class="modal-overlay main-ui">
-  <div class="modal-content">
-    <h3>✏️ แก้ไขรายการสินค้า (เฉพาะล็อตนี้)</h3>
-    <form id="editForm" onsubmit="handleUpdateProduct(event)" style="margin-top: 15px;">
-      <input type="hidden" id="editId">
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label>ยี่ห้อ (Brand)</label>
-          <input type="text" id="editBrand" required list="brandSuggestions">
-        </div>
-        <div class="form-group">
-          <label>ชื่อสูตร/สินค้า</label>
-          <input type="text" id="editName" required list="nameSuggestions">
-        </div>
-      </div>
+  </main>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>💰 ราคาทุน</label>
-          <input type="number" step="any" id="editCostPrice" oninput="calculateSellingPrice(true)">
-        </div>
-        <div class="form-group">
-  <label>📈 บวกกำไร (%)</label>
-  <select id="editProfitMargin" onchange="handleProfitMarginChange(true)">
-    <option value="none">ไม่ระบุ</option>
-    <option value="40">40%</option>
-    <option value="50">50%</option>
-    <option value="60" selected>60%</option>
-    <option value="70">70%</option>
-    <option value="80">80%</option>
-    <option value="90">90%</option>
-    <option value="100">100%</option>
-    <option value="custom">กรอกด้วยตัวเอง...</option>
-  </select>
-  
-  <!-- ช่องกรอกตัวเลขเอง (ซ่อนไว้เริ่มต้น) -->
-  <input 
-    type="number" 
-    id="editCustomProfitMargin" 
-    placeholder="ระบุ % กำไร" 
-    style="display: none; margin-top: 8px;" 
-    oninput="calculateSellingPrice(true)"
-  />
-</div>
-        <div class="form-group">
-          <label>🏷️ ราคาขาย</label>
-          <input type="number" step="any" id="editSellingPrice" readonly style="background: #f0f0f0; font-weight: bold; color: #27ae60;">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>เลขล็อต (Lot No.)</label>
-          <input type="text" id="editLotNo" required>
-        </div>
-        <div class="form-group">
-          <label>จำนวนสต็อก</label>
-          <input type="number" id="editStock" required>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>📅 วันที่รับเข้า</label>
-          <input type="date" id="editImportDate" required>
-        </div>
-        <div class="form-group">
-          <label>⚠️ วันที่หมดอายุ (EXP)</label>
-          <input type="date" id="editExpiryDate" required>
-          <div class="quick-exp-btns">
-            <button type="button" class="btn-quick" onclick="addMonthsToExpiry(3, true)">+3M</button>
-            <button type="button" class="btn-quick" onclick="addMonthsToExpiry(6, true)">+6M</button>
-            <button type="button" class="btn-quick" onclick="addMonthsToExpiry(12, true)">+1Y</button>
+  <!-- EDIT MODAL -->
+  <div id="editModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <h3>✏️ แก้ไขข้อมูลสินค้า</h3>
+      <form onsubmit="handleUpdateProduct(event)">
+        <input type="hidden" id="editId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>ยี่ห้อ (Brand)</label>
+            <input type="text" id="editBrand" required>
+          </div>
+          <div class="form-group">
+            <label>ชื่อสินค้า</label>
+            <input type="text" id="editName" required>
+          </div>
+          <div class="form-group">
+            <label>เลขล็อต</label>
+            <input type="text" id="editLotNo" required>
+          </div>
+          <div class="form-group">
+            <label>ขนาด / ปริมาณ</label>
+            <input type="text" id="editSize">
+          </div>
+          <div class="form-group">
+            <label>ราคาทุน</label>
+            <input type="number" step="0.01" id="editCostPrice" required oninput="calculateSellingPrice(true)">
+          </div>
+          <div class="form-group">
+            <label>📈 บวกกำไร (%)</label>
+            <select id="editProfitMargin" onchange="handleProfitMarginChange(true)">
+              <option value="none">ไม่ระบุ</option>
+              <option value="40">40%</option>
+              <option value="50">50%</option>
+              <option value="60">60%</option>
+              <option value="70">70%</option>
+              <option value="80">80%</option>
+              <option value="90">90%</option>
+              <option value="100">100%</option>
+              <option value="custom">กรอกด้วยตัวเอง...</option>
+            </select>
+            <input 
+              type="number" 
+              id="editCustomProfitMargin" 
+              placeholder="ระบุ % กำไร" 
+              style="display: none; margin-top: 8px;" 
+              oninput="calculateSellingPrice(true)"
+            />
+          </div>
+          <div class="form-group">
+            <label>ราคาขาย</label>
+            <input type="number" step="0.01" id="editSellingPrice" required>
+          </div>
+          <div class="form-group">
+            <label>จำนวนคงเหลือ</label>
+            <input type="number" id="editStock" required>
+          </div>
+          <div class="form-group">
+            <label>วันที่รับเข้า</label>
+            <input type="date" id="editImportDate">
+          </div>
+          <div class="form-group">
+            <label>วันหมดอายุ</label>
+            <input type="date" id="editExpiryDate">
+            <div style="margin-top: 5px; display: flex; gap: 5px;">
+              <button type="button" class="btn-xs" onclick="addMonthsToExpiry(6, true)">+6M</button>
+              <button type="button" class="btn-xs" onclick="addMonthsToExpiry(12, true)">+1Y</button>
+              <button type="button" class="btn-xs" onclick="addMonthsToExpiry(24, true)">+2Y</button>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="form-group" style="margin-bottom: 15px;">
-        <label>ขนาด/ปริมาตร</label>
-        <input type="text" id="editSize" placeholder="เช่น 1.2 kg">
-      </div>
-
-      <div class="modal-actions">
-        <button type="submit" class="btn btn-primary" style="flex:1;">💾 บันทึก</button>
-        <button type="button" class="btn btn-secondary" onclick="closeEditModal()" style="flex:1;">ยกเลิก</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal บาร์โค้ด -->
-<div id="barcodeModal" class="modal-overlay main-ui">
-  <div class="modal-content">
-    <h3>✅ บันทึกสินค้าสำเร็จ!</h3>
-    <p>รหัสบาร์โค้ด: <b id="modalBarcodeText" style="font-size: 1.2rem; color: #27ae60;">-</b></p>
-    <p style="margin-top: -5px; font-size: 0.9rem; color: #666;">ล็อต: <span id="modalLotText">-</span></p>
-    <div style="margin: 15px 0;">
-      <svg id="modalBarcodeCanvas"></svg>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-warning" onclick="triggerPrintFromModal()" style="flex:1;">🖨️ พิมพ์</button>
-      <button class="btn btn-secondary" onclick="closeModal()" style="flex:1;">ปิด</button>
+        <div style="margin-top: 15px; text-align: right;">
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">💾 บันทึกการแก้ไข</button>
+        </div>
+      </form>
     </div>
   </div>
-</div>
 
-<div id="printArea">
-  <div class="label-box">
-    <div class="label-title" id="printBrand">BRAND</div>
-    <div class="label-name" id="printName">PRODUCT NAME</div>
-    <div class="label-lot" id="printLot">LOT: -</div>
+  <!-- BARCODE MODAL -->
+  <div id="barcodeModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="text-align: center; max-width: 360px;">
+      <h3>✅ เพิ่มสินค้าเรียบร้อย</h3>
+      <p>เลขล็อต: <b id="modalLotText">-</b></p>
+      <div style="margin: 15px 0;">
+        <svg id="modalBarcodeCanvas"></svg>
+      </div>
+      <p style="font-size: 0.85rem; color: #7f8c8d;">รหัสบาร์โค้ด: <span id="modalBarcodeText"></span></p>
+      <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+        <button class="btn btn-secondary" onclick="closeModal()">ปิด</button>
+        <button class="btn btn-primary" onclick="triggerPrintFromModal()">🖨️ พิมพ์บาร์โค้ด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Print Area -->
+  <div id="printArea" class="print-only">
+    <h4 id="printBrand"></h4>
+    <p id="printName"></p>
     <svg id="barcodeCanvas"></svg>
+    <p id="printLot"></p>
   </div>
-</div>
 
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
