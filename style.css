@@ -1,177 +1,224 @@
+/* ==========================================
+   1. GLOBAL STYLES & RESET
+   ========================================== */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
-  background-color: #f4f7f6;
+  background-color: #f4f6f9;
   color: #333;
-  padding: 10px;
+  line-height: 1.6;
 }
 
+/* Container */
 .container {
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 15px;
 }
 
-h1 {
-  text-align: center;
-  color: #2c3e50;
-  font-size: 1.4rem;
-  margin: 10px 0 15px 0;
+/* Card Wrapper */
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
 }
 
-.tab-menu {
+/* ==========================================
+   2. HEADER & NAVIGATION
+   ========================================== */
+.header {
+  background: #2c3e50;
+  color: #ffffff;
+  padding: 15px 30px;
   display: flex;
-  gap: 8px;
-  margin-bottom: 15px;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 .tab-btn {
-  flex: 1;
-  padding: 10px;
-  background-color: #e0e0e0;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: bold;
+  background: transparent;
+  color: #ecf0f1;
+  border: 1px solid #34495e;
+  padding: 8px 16px;
+  border-radius: 6px;
   cursor: pointer;
-  white-space: nowrap;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  background: #34495e;
+  color: #fff;
 }
 
 .tab-btn.active {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+/* ==========================================
+   3. BUTTONS & ACTIONS
+   ========================================== */
+.action-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-primary {
   background-color: #3498db;
+  color: #fff;
+}
+.btn-primary:hover { background-color: #2980b9; }
+
+.btn-secondary {
+  background-color: #95a5a6;
+  color: #fff;
+}
+.btn-secondary:hover { background-color: #7f8c8d; }
+
+.btn-xs {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  background: #e0e0e0;
+  border: none;
+  cursor: pointer;
+}
+.btn-xs:hover { background: #ccc; }
+
+.btn-action {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
   color: white;
 }
+.btn-edit { background-color: #f39c12; }
+.btn-print { background-color: #34495e; }
+.btn-stock { background-color: #e67e22; }
+.btn-delete { background-color: #e74c3c; }
 
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-
-.card-box {
-  background: white;
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  margin-bottom: 15px;
-}
-
-.card-box h2 {
-  font-size: 1.1rem;
-  color: #34495e;
-  margin-bottom: 12px;
-}
-
-.scanner-card {
-  background: #eef7fe;
-  border: 2px dashed #3498db;
-  text-align: center;
-}
-
-.form-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
+/* ==========================================
+   4. FORMS & INPUTS
+   ========================================== */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
 }
 
 .form-group {
-  flex: 1;
-  min-width: 120px;
   display: flex;
   flex-direction: column;
 }
 
 .form-group label {
-  font-size: 0.8rem;
-  font-weight: bold;
-  margin-bottom: 4px;
-  color: #555;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #2c3e50;
 }
 
-.form-group input, .form-group select {
-  padding: 8px 10px;
-  border: 1px solid #ccc;
+.form-group input,
+.form-group select,
+.search-box input,
+.search-box select {
+  padding: 10px;
+  border: 1px solid #dcdfe6;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  outline: none;
   width: 100%;
 }
 
-.quick-exp-btns {
-  display: flex;
-  gap: 4px;
-  margin-top: 5px;
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #3498db;
 }
 
-.btn-quick {
-  flex: 1;
-  padding: 4px 2px;
-  font-size: 0.75rem;
-  background: #e8f4fc;
-  color: #2980b9;
-  border: 1px solid #bee3f8;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.btn {
-  padding: 10px;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.btn-block { width: 100%; }
-.btn-primary { background-color: #27ae60; color: white; }
-.btn-secondary { background-color: #3498db; color: white; }
-.btn-warning { background-color: #f39c12; color: white; }
-.btn-delete { background-color: #e74c3c; color: white; }
-
+/* ==========================================
+   5. PRODUCT GRID & CARDS
+   ========================================== */
 .product-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
 }
 
 .product-card {
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 12px;
-  background: #fff;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
 }
 
-/* ควบคุมรูปภาพ ไม่ให้ล้นกรอบ */
 .product-img {
   width: 100%;
-  max-height: 180px;
+  height: 180px;
   object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  display: block;
+  background-color: #f8f9fa;
+}
+
+.product-info {
+  padding: 15px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .product-info h3 {
-  font-size: 1.1rem;
-  color: #2c3e50;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 .lots-wrapper {
-  margin-top: 10px;
-  border-top: 1px solid #eee;
-  padding-top: 8px;
+  margin-top: 15px;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 10px;
 }
 
 .lot-item {
   background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 8px;
+  border: 1px solid #edf2f7;
+  border-radius: 6px;
+  padding: 10px;
   margin-bottom: 8px;
 }
 
@@ -180,140 +227,146 @@ h1 {
   justify-content: space-between;
   align-items: center;
   font-size: 0.85rem;
-  margin-bottom: 4px;
 }
 
 .stock-badge {
-  background: #e8f8f5;
-  color: #27ae60;
-  padding: 2px 6px;
-  border-radius: 4px;
+  background: #27ae60;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
   font-weight: bold;
-  font-size: 0.8rem;
 }
 
 .lot-details {
   font-size: 0.8rem;
   color: #555;
-  margin-bottom: 6px;
+  margin: 6px 0;
 }
 
 .lot-actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
 }
 
-.btn-action {
-  padding: 6px 0;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  border: none;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
+/* ==========================================
+   6. DASHBOARD & DATA TABLES
+   ========================================== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
   text-align: center;
 }
 
-.btn-edit { background-color: #2980b9; }
-.btn-print { background-color: #f39c12; }
-.btn-stock { background-color: #e67e22; }
-
-/* Dashboard Styles */
-.dashboard-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px;
-  margin-bottom: 15px;
+.stat-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-top: 5px;
 }
 
-.metric-card {
-  padding: 12px;
-  border-radius: 8px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-}
-
-.metric-title { font-size: 0.8rem; opacity: 0.9; }
-.metric-value { font-size: 1.2rem; font-weight: bold; margin-top: 4px; }
-
-.bg-blue { background-color: #3498db; }
-.bg-green { background-color: #2ecc71; }
-.bg-orange { background-color: #e67e22; }
-
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.db-table {
+.data-table {
   width: 100%;
   border-collapse: collapse;
-  white-space: nowrap;
+  margin-top: 10px;
+  font-size: 0.9rem;
 }
 
-.db-table th, .db-table td {
-  border: 1px solid #ddd;
-  padding: 6px 8px;
-  font-size: 0.8rem;
+.data-table th,
+.data-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
 }
 
-.db-table th { background-color: #f2f2f2; }
-
-.empty-state {
-  text-align: center;
-  color: #999;
-  padding: 20px;
+.data-table th {
+  background-color: #f8f9fa;
+  color: #2c3e50;
+  font-weight: 600;
 }
 
+.data-table tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+/* ==========================================
+   7. MODALS & SCANNER
+   ========================================== */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6);
-  display: none;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 15px;
 }
 
-.modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 450px;
+.modal-card {
+  background: #fff;
+  padding: 25px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
 
 #reader {
-  width: 100%;
-  max-width: 320px;
+  max-width: 400px;
   margin: 0 auto;
   border-radius: 8px;
   overflow: hidden;
 }
 
-#printArea { display: none; }
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #95a5a6;
+  font-size: 1.1rem;
+}
+
+/* ==========================================
+   8. PRINT STYLES
+   ========================================== */
+.print-only {
+  display: none;
+}
 
 @media print {
-  body * { visibility: hidden !important; }
-  .main-ui, .modal-overlay, .container { display: none !important; }
-  #printArea, #printArea * { visibility: visible !important; }
-  #printArea {
-    position: absolute !important; left: 0 !important; top: 0 !important;
-    width: 100% !important; display: flex !important; justify-content: center !important;
+  body * {
+    visibility: hidden;
   }
-  .label-box {
-    border: 1px dashed #000 !important; padding: 10px !important; width: 250px !important;
-    text-align: center !important; background: #fff !important; page-break-inside: avoid !important;
+  .print-only, .print-only * {
+    visibility: visible;
+  }
+  .print-only {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    text-align: center;
+    width: 100%;
+  }
+}
+
+/* Responsive adjust */
+@media (max-width: 600px) {
+  .header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .action-bar {
+    flex-direction: column;
   }
 }
