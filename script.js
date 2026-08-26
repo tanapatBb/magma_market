@@ -17,6 +17,7 @@ function getValue(obj, ...keys) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   fetchProducts();
   fetchDatabaseTable();
   
@@ -24,6 +25,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const importInput = document.getElementById('importDate');
   if (importInput) importInput.value = today;
 });
+
+// ระบบสลับธีม
+function initTheme() {
+  const currentTheme = localStorage.getItem('app-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  if (themeBtn) themeBtn.innerText = currentTheme === 'dark' ? '☀️ โหมดสว่าง' : '🌙 โหมดเข้ม';
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('app-theme', newTheme);
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  if (themeBtn) themeBtn.innerText = newTheme === 'dark' ? '☀️ โหมดสว่าง' : '🌙 โหมดเข้ม';
+}
 
 function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
@@ -62,7 +80,6 @@ function previewImage(event) {
   }
 }
 
-// จัดการเมื่อเปลี่ยนตัวเลือก % กำไร
 function handleProfitMarginChange(isEdit = false) {
   const selectId = isEdit ? 'editProfitMargin' : 'profitMargin';
   const customInputId = isEdit ? 'editCustomProfitMargin' : 'customProfitMargin';
@@ -83,7 +100,6 @@ function handleProfitMarginChange(isEdit = false) {
   calculateSellingPrice(isEdit);
 }
 
-// คำนวณราคาขายอัตโนมัติ
 function calculateSellingPrice(isEdit = false) {
   const costId = isEdit ? 'editCostPrice' : 'costPrice';
   const selectId = isEdit ? 'editProfitMargin' : 'profitMargin';
@@ -173,7 +189,14 @@ function getExpiryStatus(expiryDateString) {
 async function fetchProducts() {
   try {
     const res = await fetch(`${API_URL}/products`);
-    productsCache = await res.json();
+    let data = await res.json();
+    
+    // กรองเอาตัวอย่าง SmartHeart ออกตามคำขอ
+    productsCache = data.filter(p => 
+      !p.name?.toLowerCase().includes('smartheart') && 
+      !p.name?.includes('สมาร์ทฮาร์ท')
+    );
+    
     populateSuggestions(productsCache);
     filterProducts();
   } catch (err) {
@@ -252,12 +275,12 @@ function renderGroupedProducts(products) {
         ${group.image ? `<img src="${group.image}" class="product-img" alt="Product">` : ''}
         <div class="product-info">
           <h3>${group.brand || 'ไม่ระบุยี่ห้อ'}</h3>
-          <p style="font-size: 1rem; color: #2c3e50; font-weight: bold;">${group.name}</p>
-          <p><strong>ขนาด:</strong> ${group.size || 'ไม่ระบุ'}</p>
-          <p style="margin-top: 5px;"><strong>สต็อกรวม:</strong> <b style="color: #27ae60; font-size: 1.1rem;">${group.totalStock}</b> ชิ้น</p>
+          <p style="font-size: 1rem; font-weight: bold; margin-bottom: 4px;">${group.name}</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted);"><strong>ขนาด:</strong> ${group.size || 'ไม่ระบุ'}</p>
+          <p style="margin-top: 4px; font-size: 0.9rem;"><strong>สต็อกรวม:</strong> <b style="color: #27ae60;">${group.totalStock}</b> ชิ้น</p>
 
           <div class="lots-wrapper">
-            <h4 style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 6px;">📦 ล็อตที่มีสินค้า (${group.lots.length} ล็อต):</h4>
+            <h4 style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">📦 ล็อตที่มีสินค้า (${group.lots.length} ล็อต):</h4>
             ${group.lots.map(lot => {
               const cost = getValue(lot, 'costPrice', 'cost_price', 'cost', 'costprice');
               const selling = getValue(lot, 'sellingPrice', 'selling_price', 'price', 'sellingprice');
@@ -271,7 +294,7 @@ function renderGroupedProducts(products) {
               return `
                 <div class="lot-item">
                   <div class="lot-header">
-                    <span>🏷️ <b>${lotNo}</b> (บาร์โค้ด: <code>${lot.barcode}</code>)</span>
+                    <span>🏷️ <b>${lotNo}</b> (<code>${lot.barcode}</code>)</span>
                     <span class="stock-badge">คงเหลือ ${lot.stock}</span>
                   </div>
                   
@@ -328,7 +351,6 @@ function renderDashboard() {
   if (sellingValEl) sellingValEl.innerText = `${totalSelling.toLocaleString('th-TH')} ฿`;
   if (profitValEl) profitValEl.innerText = `${profit.toLocaleString('th-TH')} ฿`;
 
-  // วาดกราฟ
   const chartCanvas = document.getElementById('financialChart');
   if (chartCanvas && typeof Chart !== 'undefined') {
     const ctx = chartCanvas.getContext('2d');
@@ -345,9 +367,7 @@ function renderDashboard() {
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { position: 'bottom' }
-        }
+        plugins: { legend: { position: 'bottom' } }
       }
     });
   }
@@ -368,8 +388,8 @@ function renderDashboard() {
 async function fetchDatabaseTable() {
   try {
     const res = await fetch(`${API_URL}/products`);
-    const products = await res.json();
-    productsCache = products;
+    let products = await res.json();
+    productsCache = products.filter(p => !p.name?.toLowerCase().includes('smartheart') && !p.name?.includes('สมาร์ทฮาร์ท'));
 
     const header = document.getElementById('dbTableHeader');
     const body = document.getElementById('dbTableBody');
@@ -383,12 +403,12 @@ async function fetchDatabaseTable() {
     ];
     header.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
 
-    if (!products || products.length === 0) {
+    if (!productsCache || productsCache.length === 0) {
       body.innerHTML = `<tr><td colspan="${headers.length}" style="text-align: center;">ไม่มีข้อมูล</td></tr>`;
       return;
     }
 
-    body.innerHTML = products.map(row => {
+    body.innerHTML = productsCache.map(row => {
       const id = row.id ?? '-';
       const barcode = row.barcode ?? '-';
       const lotNo = getValue(row, 'lotNo', 'lot_no', 'lot') || '-';
@@ -566,16 +586,22 @@ async function handleAddProduct(event) {
 
 function openBarcodeModal(product) {
   const barcodeText = document.getElementById('modalBarcodeText');
-  const lotText = document.getElementById('modalLotText');
+  const printBrand = document.getElementById('printBrand');
+  const printName = document.getElementById('printName');
+  const printLot = document.getElementById('printLot');
   const modal = document.getElementById('barcodeModal');
 
+  const lotNo = getValue(product, 'lotNo', 'lot_no', 'lot') || '-';
+
   if (barcodeText) barcodeText.innerText = product.barcode;
-  if (lotText) lotText.innerText = getValue(product, 'lotNo', 'lot_no', 'lot') || '-';
+  if (printBrand) printBrand.innerText = product.brand || 'Magma Market';
+  if (printName) printName.innerText = product.name || 'สินค้า';
+  if (printLot) printLot.innerText = `LOT: ${lotNo}`;
 
   JsBarcode("#modalBarcodeCanvas", product.barcode, {
     format: "CODE128",
     width: 2,
-    height: 40,
+    height: 50,
     displayValue: true
   });
 
@@ -588,32 +614,11 @@ function closeModal() {
 }
 
 function triggerPrintFromModal() {
-  if (lastSavedProduct) {
-    printBarcode(lastSavedProduct.brand, lastSavedProduct.name, lastSavedProduct.barcode, getValue(lastSavedProduct, 'lotNo', 'lot_no', 'lot'));
-  }
+  window.print();
 }
 
 function printBarcode(brand, name, barcodeCode, lotNo) {
-  const printBrand = document.getElementById('printBrand');
-  const printName = document.getElementById('printName');
-  const printLot = document.getElementById('printLot');
-
-  if (printBrand) printBrand.innerText = brand || 'Magma Market';
-  if (printName) printName.innerText = name || 'สินค้า';
-  if (printLot) printLot.innerText = `LOT: ${lotNo || '-'}`;
-
-  JsBarcode("#barcodeCanvas", barcodeCode, {
-    format: "CODE128",
-    width: 2,
-    height: 50,
-    displayValue: true,
-    fontSize: 14,
-    margin: 0
-  });
-
-  setTimeout(() => {
-    window.print();
-  }, 100);
+  openBarcodeModal({ brand, name, barcode: barcodeCode, lotNo });
 }
 
 async function toggleScanner() {
@@ -622,27 +627,12 @@ async function toggleScanner() {
 
   if (container.style.display === 'none') {
     container.style.display = 'block';
-    
-    if (!html5QrCode) {
-      html5QrCode = new Html5Qrcode("reader");
-    }
-
-    const qrboxFunction = function(viewfinderWidth, viewfinderHeight) {
-      return {
-        width: Math.min(viewfinderWidth * 0.8, 250),
-        height: 120
-      };
-    };
+    if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
     const config = {
       fps: 20,
-      qrbox: qrboxFunction,
-      aspectRatio: 1.333333,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.UPC_A
-      ]
+      qrbox: (w, h) => ({ width: Math.min(w * 0.8, 250), height: 120 }),
+      aspectRatio: 1.333333
     };
 
     try {
@@ -677,8 +667,7 @@ async function onScanSuccess(decodedText) {
         const lotNo = getValue(item, 'lotNo', 'lot_no', 'lot');
         const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
 
-        const confirmCut = confirm(`🎯 สแกนพบสินค้า!\n\nต้องการตัดสต็อก (-1) ของ:\n${productName}${lotText}\n\nคงเหลือปัจจุบัน: ${item.stock} ชิ้น หรือไม่?`);
-        
+        const confirmCut = confirm(`🎯 สแกนพบสินค้า!\n\nตัดสต็อก (-1) ของ:\n${productName}${lotText}\n\nคงเหลือปัจจุบัน: ${item.stock} ชิ้น หรือไม่?`);
         if (confirmCut) {
           await reduceStockDirect(item.id, item.stock);
           alert(`✅ ตัดสต็อกเรียบร้อย: ${productName}`);
