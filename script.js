@@ -1,18 +1,9 @@
+const API_URL = 'https://magma-market-api.onrender.com/api';
 let html5QrCode = null;
 let currentImageData = '';
 let lastSavedProduct = null;
 let productsCache = [];
 let myChart = null;
-
-// ดึงข้อมูลจาก localStorage
-function getLocalProducts() {
-  return JSON.parse(localStorage.getItem('magma_products_db')) || [];
-}
-
-// บันทึกข้อมูลลง localStorage
-function saveLocalProducts(data) {
-  localStorage.setItem('magma_products_db', JSON.stringify(data));
-}
 
 // Helper Function ดึงค่า Key แบบยืดหยุ่น
 function getValue(obj, ...keys) {
@@ -194,10 +185,22 @@ function getExpiryStatus(expiryDateString) {
   }
 }
 
-function fetchProducts() {
-  productsCache = getLocalProducts();
-  populateSuggestions(productsCache);
-  filterProducts();
+async function fetchProducts() {
+  try {
+    const res = await fetch(`${API_URL}/products`);
+    let data = await res.json();
+    
+    // กรองเอาตัวอย่าง SmartHeart ออก
+    productsCache = data.filter(p => 
+      !p.name?.toLowerCase().includes('smartheart') && 
+      !p.name?.includes('สมาร์ทฮาร์ท')
+    );
+    
+    populateSuggestions(productsCache);
+    filterProducts();
+  } catch (err) {
+    console.error('Error fetching products:', err);
+  }
 }
 
 function populateSuggestions(products) {
@@ -381,107 +384,71 @@ function renderDashboard() {
   }
 }
 
-function fetchDatabaseTable() {
-  productsCache = getLocalProducts();
+async function fetchDatabaseTable() {
+  try {
+    const res = await fetch(`${API_URL}/products`);
+    let products = await res.json();
+    productsCache = products.filter(p => !p.name?.toLowerCase().includes('smartheart') && !p.name?.includes('สมาร์ทฮาร์ท'));
 
-  const header = document.getElementById('dbTableHeader');
-  const body = document.getElementById('dbTableBody');
+    const header = document.getElementById('dbTableHeader');
+    const body = document.getElementById('dbTableBody');
 
-  if (!header || !body) return;
+    if (!header || !body) return;
 
-  const headers = [
-    'ID', 'Barcode', 'Lot No', 'Brand', 'Name', 
-    'Cost Price', 'Profit (%)', 'Selling Price', 
-    'Import Date', 'Expiry Date', 'Size', 'Stock', 'จัดการ'
-  ];
-  header.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    const headers = [
+      'ID', 'Barcode', 'Lot No', 'Brand', 'Name', 
+      'Cost Price', 'Profit (%)', 'Selling Price', 
+      'Import Date', 'Expiry Date', 'Size', 'Stock', 'จัดการ'
+    ];
+    header.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
 
-  if (!productsCache || productsCache.length === 0) {
-    body.innerHTML = `<tr><td colspan="${headers.length}" style="text-align: center;">ไม่มีข้อมูล</td></tr>`;
-    return;
+    if (!productsCache || productsCache.length === 0) {
+      body.innerHTML = `<tr><td colspan="${headers.length}" style="text-align: center;">ไม่มีข้อมูล</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = productsCache.map(row => {
+      const id = row.id ?? '-';
+      const barcode = row.barcode ?? '-';
+      const lotNo = getValue(row, 'lotNo', 'lot_no', 'lot') || '-';
+      const brand = row.brand ?? '-';
+      const name = row.name ?? '-';
+
+      const costPrice = getValue(row, 'costPrice', 'cost_price', 'cost', 'costprice');
+      const profitMargin = getValue(row, 'profitMargin', 'profit_margin', 'profit');
+      const sellingPrice = getValue(row, 'sellingPrice', 'selling_price', 'price', 'sellingprice');
+      const importDate = getValue(row, 'importDate', 'import_date', 'import') || '-';
+      const expiryDate = getValue(row, 'expiryDate', 'expiry_date', 'exp', 'expiry') || '-';
+      const size = row.size || (row.volumeValue ? `${row.volumeValue} ${row.volumeUnit || ''}` : '-');
+      const stock = row.stock ?? 0;
+
+      return `
+        <tr>
+          <td>${id}</td>
+          <td><code>${barcode}</code></td>
+          <td>${lotNo}</td>
+          <td><b>${brand}</b></td>
+          <td>${name}</td>
+          <td>${costPrice ? costPrice + ' ฿' : '-'}</td>
+          <td>${profitMargin !== null && profitMargin !== undefined ? profitMargin + '%' : '-'}</td>
+          <td style="color:#27ae60; font-weight:bold;">${sellingPrice ? sellingPrice + ' ฿' : '-'}</td>
+          <td>${importDate}</td>
+          <td>${expiryDate}</td>
+          <td>${size}</td>
+          <td><b>${stock}</b></td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-action btn-edit" onclick="openEditModal('${row.id}')">✏️</button>
+              <button class="btn-action btn-delete" onclick="deleteProduct('${row.id}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    console.error('Error fetching database table:', err);
   }
-
-  body.innerHTML = productsCache.map(row => {
-    const id = row.id ?? '-';
-    const barcode = row.barcode ?? '-';
-    const lotNo = getValue(row, 'lotNo', 'lot_no', 'lot') || '-';
-    const brand = row.brand ?? '-';
-    const name = row.name ?? '-';
-
-    const costPrice = getValue(row, 'costPrice', 'cost_price', 'cost', 'costprice');
-    const profitMargin = getValue(row, 'profitMargin', 'profit_margin', 'profit');
-    const sellingPrice = getValue(row, 'sellingPrice', 'selling_price', 'price', 'sellingprice');
-    const importDate = getValue(row, 'importDate', 'import_date', 'import') || '-';
-    const expiryDate = getValue(row, 'expiryDate', 'expiry_date', 'exp', 'expiry') || '-';
-    const size = row.size || (row.volumeValue ? `${row.volumeValue} ${row.volumeUnit || ''}` : '-');
-    const stock = row.stock ?? 0;
-
-    return `
-      <tr>
-        <td>${id}</td>
-        <td><code>${barcode}</code></td>
-        <td>${lotNo}</td>
-        <td><b>${brand}</b></td>
-        <td>${name}</td>
-        <td>${costPrice ? costPrice + ' ฿' : '-'}</td>
-        <td>${profitMargin !== null && profitMargin !== undefined ? profitMargin + '%' : '-'}</td>
-        <td style="color:#27ae60; font-weight:bold;">${sellingPrice ? sellingPrice + ' ฿' : '-'}</td>
-        <td>${importDate}</td>
-        <td>${expiryDate}</td>
-        <td>${size}</td>
-        <td><b>${stock}</b></td>
-        <td>
-          <div style="display: flex; gap: 4px;">
-            <button class="btn-action btn-edit" onclick="openEditModal('${row.id}')">✏️</button>
-            <button class="btn-action btn-delete" onclick="deleteProduct('${row.id}')">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function handleAddProduct(event) {
-  event.preventDefault();
-
-  const barcode = Math.floor(100000 + Math.random() * 900000).toString();
-  const newProduct = {
-    id: "prod-" + Date.now(),
-    barcode: barcode,
-    lotNo: document.getElementById('lotNo').value,
-    brand: document.getElementById('brand').value,
-    name: document.getElementById('name').value,
-    costPrice: Number(document.getElementById('costPrice').value),
-    profitMargin: getSelectedProfitMargin(false),
-    sellingPrice: Number(document.getElementById('sellingPrice').value),
-    volumeValue: document.getElementById('volumeValue').value,
-    volumeUnit: document.getElementById('volumeUnit').value,
-    size: document.getElementById('volumeValue').value ? `${document.getElementById('volumeValue').value} ${document.getElementById('volumeUnit').value || ''}` : '',
-    stock: Number(document.getElementById('stock').value),
-    importDate: document.getElementById('importDate').value,
-    expiryDate: document.getElementById('expiryDate').value,
-    image: currentImageData
-  };
-
-  const list = getLocalProducts();
-  list.unshift(newProduct);
-  saveLocalProducts(list);
-
-  lastSavedProduct = newProduct;
-  document.getElementById('productForm').reset();
-  
-  const today = new Date().toISOString().split('T')[0];
-  const importDateInput = document.getElementById('importDate');
-  if (importDateInput) importDateInput.value = today;
-
-  const imgContainer = document.getElementById('imagePreviewContainer');
-  if (imgContainer) imgContainer.style.display = 'none';
-  currentImageData = '';
-  toggleAddForm();
-
-  fetchProducts();
-  fetchDatabaseTable();
-  openBarcodeModal(lastSavedProduct);
 }
 
 function openEditModal(id) {
@@ -531,58 +498,89 @@ function closeEditModal() {
   if (modal) modal.style.display = 'none';
 }
 
-function handleUpdateProduct(event) {
+async function handleUpdateProduct(event) {
   event.preventDefault();
   const id = document.getElementById('editId').value;
-  let list = getLocalProducts();
-  const index = list.findIndex(p => String(p.id) === String(id));
 
-  if (index !== -1) {
-    list[index] = {
-      ...list[index],
-      brand: document.getElementById('editBrand').value,
-      name: document.getElementById('editName').value,
-      costPrice: Number(document.getElementById('editCostPrice').value),
-      profitMargin: getSelectedProfitMargin(true),
-      sellingPrice: Number(document.getElementById('editSellingPrice').value),
-      lotNo: document.getElementById('editLotNo').value,
-      stock: Number(document.getElementById('editStock').value),
-      importDate: document.getElementById('editImportDate').value,
-      expiryDate: document.getElementById('editExpiryDate').value,
-      size: document.getElementById('editSize').value
-    };
-    saveLocalProducts(list);
-    closeEditModal();
-    fetchProducts();
-    fetchDatabaseTable();
+  const updateData = {
+    brand: document.getElementById('editBrand').value,
+    name: document.getElementById('editName').value,
+    costPrice: Number(document.getElementById('editCostPrice').value),
+    profitMargin: getSelectedProfitMargin(true),
+    sellingPrice: Number(document.getElementById('editSellingPrice').value),
+    lotNo: document.getElementById('editLotNo').value,
+    stock: Number(document.getElementById('editStock').value),
+    importDate: document.getElementById('editImportDate').value,
+    expiryDate: document.getElementById('editExpiryDate').value,
+    size: document.getElementById('editSize').value
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData)
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+      closeEditModal();
+      fetchProducts();
+      fetchDatabaseTable();
+    }
+  } catch (err) {
+    alert('ไม่สามารถอัปเดตข้อมูลได้');
   }
 }
 
-function reduceStock(id, currentStock) {
-  if (currentStock <= 0) return alert('⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!');
+async function handleAddProduct(event) {
+  event.preventDefault();
 
-  const item = productsCache.find(p => String(p.id) === String(id));
-  const productName = item ? `${item.brand || ''} ${item.name || ''}`.trim() : 'สินค้า';
+  const barcode = Math.floor(100000 + Math.random() * 900000).toString();
+  const productData = {
+    barcode: barcode,
+    lotNo: document.getElementById('lotNo').value,
+    brand: document.getElementById('brand').value,
+    name: document.getElementById('name').value,
+    costPrice: Number(document.getElementById('costPrice').value),
+    profitMargin: getSelectedProfitMargin(false),
+    sellingPrice: Number(document.getElementById('sellingPrice').value),
+    volumeValue: document.getElementById('volumeValue').value,
+    volumeUnit: document.getElementById('volumeUnit').value,
+    stock: Number(document.getElementById('stock').value),
+    importDate: document.getElementById('importDate').value,
+    expiryDate: document.getElementById('expiryDate').value,
+    image: currentImageData
+  };
 
-  if (!confirm(`❓ ยืนยันการตัดสต็อก (-1)\n\nสินค้า: ${productName}\nคงเหลือ: ${currentStock} ชิ้น`)) return;
+  try {
+    const res = await fetch(`${API_URL}/products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(productData)
+    });
 
-  let list = getLocalProducts();
-  const index = list.findIndex(p => String(p.id) === String(id));
-  if (index !== -1) {
-    list[index].stock = currentStock - 1;
-    saveLocalProducts(list);
-    fetchProducts();
-    fetchDatabaseTable();
+    const result = await res.json();
+    if (result.status === 'success') {
+      lastSavedProduct = result.data;
+      document.getElementById('productForm').reset();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const importDateInput = document.getElementById('importDate');
+      if (importDateInput) importDateInput.value = today;
+
+      const imgContainer = document.getElementById('imagePreviewContainer');
+      if (imgContainer) imgContainer.style.display = 'none';
+      currentImageData = '';
+      toggleAddForm();
+
+      fetchProducts();
+      fetchDatabaseTable();
+
+      openBarcodeModal(lastSavedProduct);
+    }
+  } catch (err) {
+    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
   }
-}
-
-function deleteProduct(id) {
-  if (!confirm('ยืนยันการลบรายการล็อตนี้?')) return;
-  let list = getLocalProducts();
-  list = list.filter(item => String(item.id) !== String(id));
-  saveLocalProducts(list);
-  fetchProducts();
-  fetchDatabaseTable();
 }
 
 function openBarcodeModal(product) {
@@ -655,30 +653,85 @@ async function stopScanner() {
   if (container) container.style.display = 'none';
 }
 
-function onScanSuccess(decodedText) {
+async function onScanSuccess(decodedText) {
   stopScanner();
-  const products = getLocalProducts();
-  const item = products.find(p => String(p.barcode) === String(decodedText));
+  try {
+    const res = await fetch(`${API_URL}/products`);
+    const products = await res.json();
+    const item = products.find(p => String(p.barcode) === String(decodedText));
 
-  if (item) {
-    if (item.stock > 0) {
-      const productName = `${item.brand || ''} ${item.name || ''}`.trim();
-      const confirmCut = confirm(`🎯 สแกนพบสินค้า!\n\nตัดสต็อก (-1) ของ:\n${productName}\n\nคงเหลือ: ${item.stock} ชิ้น หรือไม่?`);
-      if (confirmCut) {
-        let list = getLocalProducts();
-        const index = list.findIndex(p => String(p.id) === String(item.id));
-        if (index !== -1) {
-          list[index].stock = item.stock - 1;
-          saveLocalProducts(list);
-          fetchProducts();
-          fetchDatabaseTable();
+    if (item) {
+      if (item.stock > 0) {
+        const productName = `${item.brand || ''} ${item.name || ''}`.trim();
+        const lotNo = getValue(item, 'lotNo', 'lot_no', 'lot');
+        const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
+
+        const confirmCut = confirm(`🎯 สแกนพบสินค้า!\n\nตัดสต็อก (-1) ของ:\n${productName}${lotText}\n\nคงเหลือปัจจุบัน: ${item.stock} ชิ้น หรือไม่?`);
+        if (confirmCut) {
+          await reduceStockDirect(item.id, item.stock);
           alert(`✅ ตัดสต็อกเรียบร้อย: ${productName}`);
         }
+      } else {
+        alert(`⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว! (${item.name})`);
       }
     } else {
-      alert(`⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว! (${item.name})`);
+      alert(`❌ ไม่พบรหัสบาร์โค้ด: ${decodedText}`);
     }
-  } else {
-    alert(`❌ ไม่พบรหัสบาร์โค้ด: ${decodedText}`);
+  } catch (err) {
+    alert('เกิดข้อผิดพลาดในการสแกน');
+  }
+}
+
+async function reduceStockDirect(id, currentStock) {
+  const res = await fetch(`${API_URL}/products/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stock: currentStock - 1 })
+  });
+  const result = await res.json();
+  if (result.status === 'success') {
+    fetchProducts();
+    fetchDatabaseTable();
+  }
+}
+
+async function reduceStock(id, currentStock) {
+  if (currentStock <= 0) return alert('⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!');
+
+  const item = productsCache.find(p => String(p.id) === String(id));
+  const productName = item ? `${item.brand || ''} ${item.name || ''}`.trim() : 'สินค้า';
+  const lotNo = getValue(item, 'lotNo', 'lot_no', 'lot');
+  const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
+
+  const confirmCut = confirm(`❓ ยืนยันการตัดสต็อก (-1)\n\nสินค้า: ${productName}${lotText}\nคงเหลือปัจจุบัน: ${currentStock} ชิ้น`);
+  if (!confirmCut) return;
+
+  try {
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stock: currentStock - 1 })
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+      fetchProducts();
+      fetchDatabaseTable();
+    }
+  } catch (err) {
+    alert('ไม่สามารถตัดสต็อกได้');
+  }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('ยืนยันการลบรายการล็อตนี้?')) return;
+  try {
+    const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+    const result = await res.json();
+    if (result.status === 'success') {
+      fetchProducts();
+      fetchDatabaseTable();
+    }
+  } catch (err) {
+    alert('เกิดข้อผิดพลาด');
   }
 }
