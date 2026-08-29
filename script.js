@@ -16,16 +16,29 @@ function getValue(obj, ...keys) {
   return null;
 }
 
+// ==========================================
+// 1. ระบบเริ่มต้นทำงาน & Auto Polling
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   fetchProducts();
   fetchDatabaseTable();
+  fetchFilteredHistory();
   
   const today = new Date().toISOString().split('T')[0];
   const importInput = document.getElementById('importDate');
   if (importInput) importInput.value = today;
+
+  // Auto Polling ทุกๆ 15 วินาที
+  setInterval(() => {
+    fetchProducts();
+    fetchFilteredHistory();
+  }, 15000);
 });
 
+// ==========================================
+// 2. จัดการธีม & แท็บ
+// ==========================================
 function initTheme() {
   const currentTheme = localStorage.getItem('app-theme') || 'dark';
   document.documentElement.setAttribute('data-theme', currentTheme);
@@ -57,6 +70,7 @@ function switchTab(tabId) {
 
   if (tabId === 'database-tab') fetchDatabaseTable();
   if (tabId === 'dashboard-tab') renderDashboard();
+  if (tabId === 'history-tab') fetchFilteredHistory();
 }
 
 function toggleAddForm() {
@@ -79,6 +93,9 @@ function previewImage(event) {
   }
 }
 
+// ==========================================
+// 3. ระบบคำนวณราคา & วันหมดอายุ
+// ==========================================
 function handleProfitMarginChange(isEdit = false) {
   const selectId = isEdit ? 'editProfitMargin' : 'profitMargin';
   const customInputId = isEdit ? 'editCustomProfitMargin' : 'customProfitMargin';
@@ -185,12 +202,14 @@ function getExpiryStatus(expiryDateString) {
   }
 }
 
+// ==========================================
+// 4. ดึงและแสดงรายการสินค้า (Products API)
+// ==========================================
 async function fetchProducts() {
   try {
     const res = await fetch(`${API_URL}/products`);
     let data = await res.json();
     
-    // กรองเอาตัวอย่าง SmartHeart ออก
     productsCache = data.filter(p => 
       !p.name?.toLowerCase().includes('smartheart') && 
       !p.name?.includes('สมาร์ทฮาร์ท')
@@ -318,6 +337,9 @@ function renderGroupedProducts(products) {
   }).join('');
 }
 
+// ==========================================
+// 5. Dashboard & Database Table
+// ==========================================
 function renderDashboard() {
   let totalCost = 0;
   let totalSelling = 0;
@@ -451,6 +473,9 @@ async function fetchDatabaseTable() {
   }
 }
 
+// ==========================================
+// 6. เพิ่ม / แก้ไข / ลบ สินค้า
+// ==========================================
 function openEditModal(id) {
   const item = productsCache.find(p => String(p.id) === String(id));
   if (!item) return;
@@ -583,6 +608,96 @@ async function handleAddProduct(event) {
   }
 }
 
+async function deleteProduct(id) {
+  if (!confirm('ยืนยันการลบรายการล็อตนี้?')) return;
+  try {
+    const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+    const result = await res.json();
+    if (result.status === 'success') {
+      fetchProducts();
+      fetchDatabaseTable();
+    }
+  } catch (err) {
+    alert('เกิดข้อผิดพลาด');
+  }
+}
+
+// ==========================================
+// 7. ตัดสต็อก & บันทึกประวัติลง Database (Audit Log)
+// ==========================================
+async function saveHistoryLog(item, qtyCut, remainingStock) {
+  if (!item) return;
+  try {
+    await fetch(`${API_URL}/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: item.id,
+        brand: item.brand,
+        name: item.name,
+        lotNo: getValue(item, 'lotNo', 'lot_no', 'lot'),
+        barcode: item.barcode,
+        sellingPrice: getValue(item, 'sellingPrice', 'selling_price', 'price', 'sellingprice') || 0,
+        qtyCut: qtyCut,
+        remainingStock: remainingStock
+      })
+    });
+  } catch (err) {
+    console.error('Error saving history log:', err);
+  }
+}
+
+async function reduceStock(id, currentStock) {
+  if (currentStock <= 0) return alert('⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!');
+
+  const item = productsCache.find(p => String(p.id) === String(id));
+  const productName = item ? `${item.brand || ''} ${item.name || ''}`.trim() : 'สินค้า';
+  const lotNo = getValue(item, 'lotNo', 'lot_no', 'lot');
+  const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
+
+  const confirmCut = confirm(`❓ ยืนยันการตัดสต็อก (-1)\n\nสินค้า: ${productName}${lotText}\nคงเหลือปัจจุบัน: ${currentStock} ชิ้น`);
+  if (!confirmCut) return;
+
+  try {
+    const newStock = currentStock - 1;
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stock: newStock })
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+      await saveHistoryLog(item, 1, newStock); // บันทึกประวัติเข้า stock_history
+      fetchProducts();
+      fetchDatabaseTable();
+      fetchFilteredHistory();
+    }
+  } catch (err) {
+    alert('ไม่สามารถตัดสต็อกได้');
+  }
+}
+
+async function reduceStockDirect(id, currentStock) {
+  const item = productsCache.find(p => String(p.id) === String(id));
+  const newStock = currentStock - 1;
+
+  const res = await fetch(`${API_URL}/products/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stock: newStock })
+  });
+  const result = await res.json();
+  if (result.status === 'success') {
+    await saveHistoryLog(item, 1, newStock); // บันทึกประวัติเข้า stock_history
+    fetchProducts();
+    fetchDatabaseTable();
+    fetchFilteredHistory();
+  }
+}
+
+// ==========================================
+// 8. สแกนบาร์โค้ด & พิมพ์บาร์โค้ด Modal
+// ==========================================
 function openBarcodeModal(product) {
   const barcodeText = document.getElementById('modalBarcodeText');
   const printBrand = document.getElementById('printBrand');
@@ -682,81 +797,8 @@ async function onScanSuccess(decodedText) {
   }
 }
 
-async function reduceStockDirect(id, currentStock) {
-  const res = await fetch(`${API_URL}/products/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ stock: currentStock - 1 })
-  });
-  const result = await res.json();
-  if (result.status === 'success') {
-    fetchProducts();
-    fetchDatabaseTable();
-  }
-}
-
-async function reduceStock(id, currentStock) {
-  if (currentStock <= 0) return alert('⚠️ สินค้าล็อตนี้หมดสต็อกแล้ว!');
-
-  const item = productsCache.find(p => String(p.id) === String(id));
-  const productName = item ? `${item.brand || ''} ${item.name || ''}`.trim() : 'สินค้า';
-  const lotNo = getValue(item, 'lotNo', 'lot_no', 'lot');
-  const lotText = lotNo ? ` (Lot: ${lotNo})` : '';
-
-  const confirmCut = confirm(`❓ ยืนยันการตัดสต็อก (-1)\n\nสินค้า: ${productName}${lotText}\nคงเหลือปัจจุบัน: ${currentStock} ชิ้น`);
-  if (!confirmCut) return;
-
-  try {
-    const res = await fetch(`${API_URL}/products/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stock: currentStock - 1 })
-    });
-    const result = await res.json();
-    if (result.status === 'success') {
-      fetchProducts();
-      fetchDatabaseTable();
-    }
-  } catch (err) {
-    alert('ไม่สามารถตัดสต็อกได้');
-  }
-}
-
-async function deleteProduct(id) {
-  if (!confirm('ยืนยันการลบรายการล็อตนี้?')) return;
-  try {
-    const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
-    const result = await res.json();
-    if (result.status === 'success') {
-      fetchProducts();
-      fetchDatabaseTable();
-    }
-  } catch (err) {
-    alert('เกิดข้อผิดพลาด');
-  }
-}
-
 // ==========================================
-// ระบบ Auto Polling: ดึงข้อมูลอัตโนมัติทุกๆ 15 วินาที
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. ดึงข้อมูลครั้งแรกทันทีที่เปิดหน้าเว็บขึ้นมา
-    fetchProducts();
-    if (typeof fetchHistory === 'function') {
-        fetchHistory();
-    }
-
-    // 2. ตั้งเวลาดึงข้อมูลใหม่เรื่อยๆ ทุก 15 วินาที (15000 มิลลิวินาที)
-    setInterval(() => {
-        fetchProducts();
-        if (typeof fetchHistory === 'function') {
-            fetchHistory();
-        }
-    }, 15000);
-});
-
-// ==========================================
-// ส่วนที่ 1: ฟังก์ชันดึงประวัติการตัดสต็อกพร้อมตัวกรอง
+// 9. ระบบประวัติการตัดสต็อก & ตัวกรอง (Audit Log)
 // ==========================================
 async function fetchFilteredHistory() {
   const productInput = document.getElementById('filterProduct');
@@ -767,8 +809,7 @@ async function fetchFilteredHistory() {
   const startDate = startDateInput ? startDateInput.value : '';
   const endDate = endDateInput ? endDateInput.value : '';
 
-  // ยิง API ไปที่ Render Backend
-  let url = 'https://magma-market-api.onrender.com/api/history?';
+  let url = `${API_URL}/history?`;
   if (selectedProduct) url += `productId=${encodeURIComponent(selectedProduct)}&`;
   if (startDate) url += `startDate=${encodeURIComponent(startDate)}&`;
   if (endDate) url += `endDate=${encodeURIComponent(endDate)}&`;
@@ -783,9 +824,6 @@ async function fetchFilteredHistory() {
   }
 }
 
-// ==========================================
-// ส่วนที่ 2: ฟังก์ชันแสดงผลข้อมูลลงในตาราง HTML
-// ==========================================
 function renderHistoryTable(data) {
   const tbody = document.getElementById('historyTableBody');
   if (!tbody) return;
@@ -817,7 +855,7 @@ function renderHistoryTable(data) {
         <td>${dateStr}</td>
         <td><strong>${item.name || '-'}</strong> ${item.brand ? `(${item.brand})` : ''}</td>
         <td>${item.lot_no || '-'}</td>
-        <td style="color: #e53e3e; font-weight: bold;">-${qty}</td>
+        <td style="color: #e53e3e; font-weight: bold; text-align: center;">-${qty}</td>
         <td>฿${price.toLocaleString()}</td>
         <td>฿${(price * qty).toLocaleString()}</td>
       </tr>
