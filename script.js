@@ -4,6 +4,7 @@ let currentImageData = '';
 let lastSavedProduct = null;
 let productsCache = [];
 let myChart = null;
+let rawHistoryCache = []; // ตัวแปรเก็บประวัติสำหรับสร้าง Dropdown
 
 // Helper Function ดึงค่า Key แบบยืดหยุ่น
 function getValue(obj, ...keys) {
@@ -29,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const importInput = document.getElementById('importDate');
   if (importInput) importInput.value = today;
 
-  // Auto Polling ทุกๆ 15 วินาที
+  // Auto Polling ดึงข้อมูลใหม่ทุกๆ 15 วินาที
   setInterval(() => {
     fetchProducts();
     fetchFilteredHistory();
@@ -798,19 +799,22 @@ async function onScanSuccess(decodedText) {
 }
 
 // ==========================================
-// 9. ระบบประวัติการตัดสต็อก & ตัวกรอง (Audit Log)
+// 9. ระบบประวัติการตัดสต็อก & ตัวกรอง Dropdown/Date (Audit Log)
 // ==========================================
 async function fetchFilteredHistory() {
-  const productInput = document.getElementById('filterProduct');
+  const nameSelect = document.getElementById('filterHistoryName');
+  const lotSelect = document.getElementById('filterHistoryLot');
   const startDateInput = document.getElementById('filterStartDate');
   const endDateInput = document.getElementById('filterEndDate');
 
-  const selectedProduct = productInput ? productInput.value : '';
+  const selectedName = nameSelect ? nameSelect.value : '';
+  const selectedLot = lotSelect ? lotSelect.value : '';
   const startDate = startDateInput ? startDateInput.value : '';
   const endDate = endDateInput ? endDateInput.value : '';
 
   let url = `${API_URL}/history?`;
-  if (selectedProduct) url += `productId=${encodeURIComponent(selectedProduct)}&`;
+  if (selectedName) url += `name=${encodeURIComponent(selectedName)}&`;
+  if (selectedLot) url += `lotNo=${encodeURIComponent(selectedLot)}&`;
   if (startDate) url += `startDate=${encodeURIComponent(startDate)}&`;
   if (endDate) url += `endDate=${encodeURIComponent(endDate)}&`;
 
@@ -818,10 +822,63 @@ async function fetchFilteredHistory() {
     const res = await fetch(url);
     if (!res.ok) throw new Error('Network response was not ok');
     const historyData = await res.json();
+    
+    // บันทึกและสร้างตัวเลือกใน Dropdown เมื่อโหลดข้อมูลทั้งหมด
+    if (!selectedName && !selectedLot && !startDate && !endDate) {
+      rawHistoryCache = historyData;
+      populateHistoryDropdowns(historyData);
+    } else if (rawHistoryCache.length === 0) {
+      fetchRawHistoryForDropdowns();
+    }
+
     renderHistoryTable(historyData);
   } catch (err) {
     console.error('Error fetching history:', err);
   }
+}
+
+// สร้าง Dropdown ตัวเลือกเฉพาะที่มีข้อมูลบันทึกอยู่จริง
+function populateHistoryDropdowns(data) {
+  const nameSelect = document.getElementById('filterHistoryName');
+  const lotSelect = document.getElementById('filterHistoryLot');
+  if (!nameSelect || !lotSelect) return;
+
+  const currentName = nameSelect.value;
+  const currentLot = lotSelect.value;
+
+  const names = [...new Set(data.map(item => item.name).filter(Boolean))];
+  const lots = [...new Set(data.map(item => item.lot_no).filter(Boolean))];
+
+  nameSelect.innerHTML = `<option value="">ทั้งหมด (All Products)</option>` + 
+    names.map(n => `<option value="${n}" ${n === currentName ? 'selected' : ''}>${n}</option>`).join('');
+
+  lotSelect.innerHTML = `<option value="">ทั้งหมด (All Lots)</option>` + 
+    lots.map(l => `<option value="${l}" ${l === currentLot ? 'selected' : ''}>${l}</option>`).join('');
+}
+
+async function fetchRawHistoryForDropdowns() {
+  try {
+    const res = await fetch(`${API_URL}/history`);
+    const data = await res.json();
+    rawHistoryCache = data;
+    populateHistoryDropdowns(data);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function resetHistoryFilters() {
+  const nameSelect = document.getElementById('filterHistoryName');
+  const lotSelect = document.getElementById('filterHistoryLot');
+  const startDateInput = document.getElementById('filterStartDate');
+  const endDateInput = document.getElementById('filterEndDate');
+
+  if (nameSelect) nameSelect.value = '';
+  if (lotSelect) lotSelect.value = '';
+  if (startDateInput) startDateInput.value = '';
+  if (endDateInput) endDateInput.value = '';
+
+  fetchFilteredHistory();
 }
 
 function renderHistoryTable(data) {
@@ -834,7 +891,7 @@ function renderHistoryTable(data) {
   let totalPrice = 0;
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 15px;">ไม่พบประวัติการตัดสต็อก</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 15px;">ไม่พบประวัติการตัดสต็อกตามเงื่อนไขที่เลือก</td></tr>';
     const totalQtyEl = document.getElementById('totalCutQty');
     const totalValEl = document.getElementById('totalCutValue');
     if (totalQtyEl) totalQtyEl.innerText = '0 ชิ้น';
