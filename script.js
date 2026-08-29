@@ -735,3 +735,22 @@ async function deleteProduct(id) {
     alert('เกิดข้อผิดพลาด');
   }
 }
+
+// ==========================================
+// ระบบ Auto Polling: ดึงข้อมูลอัตโนมัติทุกๆ 15 วินาที
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. ดึงข้อมูลครั้งแรกทันทีที่เปิดหน้าเว็บขึ้นมา
+    fetchProducts();
+    if (typeof fetchHistory === 'function') {
+        fetchHistory();
+    }
+
+    // 2. ตั้งเวลาดึงข้อมูลใหม่เรื่อยๆ ทุก 15 วินาที (15000 มิลลิวินาที)
+    setInterval(() => {
+        fetchProducts();
+        if (typeof fetchHistory === 'function') {
+            fetchHistory();
+        }
+    }, 15000);
+});
