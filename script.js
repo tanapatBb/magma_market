@@ -754,3 +754,78 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 15000);
 });
+
+// ==========================================
+// ส่วนที่ 1: ฟังก์ชันดึงประวัติการตัดสต็อกพร้อมตัวกรอง
+// ==========================================
+async function fetchFilteredHistory() {
+  const productInput = document.getElementById('filterProduct');
+  const startDateInput = document.getElementById('filterStartDate');
+  const endDateInput = document.getElementById('filterEndDate');
+
+  const selectedProduct = productInput ? productInput.value : '';
+  const startDate = startDateInput ? startDateInput.value : '';
+  const endDate = endDateInput ? endDateInput.value : '';
+
+  // ยิง API ไปที่ Render Backend
+  let url = 'https://magma-market-api.onrender.com/api/history?';
+  if (selectedProduct) url += `productId=${encodeURIComponent(selectedProduct)}&`;
+  if (startDate) url += `startDate=${encodeURIComponent(startDate)}&`;
+  if (endDate) url += `endDate=${encodeURIComponent(endDate)}&`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Network response was not ok');
+    const historyData = await res.json();
+    renderHistoryTable(historyData);
+  } catch (err) {
+    console.error('Error fetching history:', err);
+  }
+}
+
+// ==========================================
+// ส่วนที่ 2: ฟังก์ชันแสดงผลข้อมูลลงในตาราง HTML
+// ==========================================
+function renderHistoryTable(data) {
+  const tbody = document.getElementById('historyTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  let totalQty = 0;
+  let totalPrice = 0;
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 15px;">ไม่พบประวัติการตัดสต็อก</td></tr>';
+    const totalQtyEl = document.getElementById('totalCutQty');
+    const totalValEl = document.getElementById('totalCutValue');
+    if (totalQtyEl) totalQtyEl.innerText = '0 ชิ้น';
+    if (totalValEl) totalValEl.innerText = '฿0';
+    return;
+  }
+
+  data.forEach(item => {
+    const qty = Number(item.qty_cut) || 0;
+    const price = Number(item.selling_price) || 0;
+    totalQty += qty;
+    totalPrice += price * qty;
+
+    const dateStr = item.created_at ? new Date(item.created_at).toLocaleString('th-TH') : '-';
+    
+    tbody.innerHTML += `
+      <tr>
+        <td>${dateStr}</td>
+        <td><strong>${item.name || '-'}</strong> ${item.brand ? `(${item.brand})` : ''}</td>
+        <td>${item.lot_no || '-'}</td>
+        <td style="color: #e53e3e; font-weight: bold;">-${qty}</td>
+        <td>฿${price.toLocaleString()}</td>
+        <td>฿${(price * qty).toLocaleString()}</td>
+      </tr>
+    `;
+  });
+
+  const totalQtyEl = document.getElementById('totalCutQty');
+  const totalValEl = document.getElementById('totalCutValue');
+  if (totalQtyEl) totalQtyEl.innerText = `${totalQty} ชิ้น`;
+  if (totalValEl) totalValEl.innerText = `฿${totalPrice.toLocaleString()}`;
+}
