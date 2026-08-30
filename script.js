@@ -4,7 +4,8 @@ let currentImageData = '';
 let lastSavedProduct = null;
 let productsCache = [];
 let myChart = null;
-let rawHistoryCache = []; // ตัวแปรเก็บประวัติสำหรับสร้าง Dropdown
+let rawHistoryCache = [];
+let historyCache = [];
 
 // Helper Function ดึงค่า Key แบบยืดหยุ่น
 function getValue(obj, ...keys) {
@@ -668,7 +669,7 @@ async function reduceStock(id, currentStock) {
     });
     const result = await res.json();
     if (result.status === 'success') {
-      await saveHistoryLog(item, 1, newStock); // บันทึกประวัติเข้า stock_history
+      await saveHistoryLog(item, 1, newStock);
       fetchProducts();
       fetchDatabaseTable();
       fetchFilteredHistory();
@@ -689,7 +690,7 @@ async function reduceStockDirect(id, currentStock) {
   });
   const result = await res.json();
   if (result.status === 'success') {
-    await saveHistoryLog(item, 1, newStock); // บันทึกประวัติเข้า stock_history
+    await saveHistoryLog(item, 1, newStock);
     fetchProducts();
     fetchDatabaseTable();
     fetchFilteredHistory();
@@ -799,7 +800,7 @@ async function onScanSuccess(decodedText) {
 }
 
 // ==========================================
-// 9. ระบบประวัติการตัดสต็อก & ตัวกรอง Dropdown/Date (Audit Log)
+// 9. ระบบประวัติการตัดสต็อก (Audit Log & Manage)
 // ==========================================
 async function fetchFilteredHistory() {
   const nameSelect = document.getElementById('filterHistoryName');
@@ -823,7 +824,6 @@ async function fetchFilteredHistory() {
     if (!res.ok) throw new Error('Network response was not ok');
     const historyData = await res.json();
     
-    // บันทึกและสร้างตัวเลือกใน Dropdown เมื่อโหลดข้อมูลทั้งหมด
     if (!selectedName && !selectedLot && !startDate && !endDate) {
       rawHistoryCache = historyData;
       populateHistoryDropdowns(historyData);
@@ -837,7 +837,6 @@ async function fetchFilteredHistory() {
   }
 }
 
-// สร้าง Dropdown ตัวเลือกเฉพาะที่มีข้อมูลบันทึกอยู่จริง
 function populateHistoryDropdowns(data) {
   const nameSelect = document.getElementById('filterHistoryName');
   const lotSelect = document.getElementById('filterHistoryLot');
@@ -885,13 +884,14 @@ function renderHistoryTable(data) {
   const tbody = document.getElementById('historyTableBody');
   if (!tbody) return;
 
+  historyCache = data || [];
   tbody.innerHTML = '';
 
   let totalQty = 0;
   let totalPrice = 0;
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 15px;">ไม่พบประวัติการตัดสต็อกตามเงื่อนไขที่เลือก</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 15px;">ไม่พบประวัติการตัดสต็อกตามเงื่อนไขที่เลือก</td></tr>';
     const totalQtyEl = document.getElementById('totalCutQty');
     const totalValEl = document.getElementById('totalCutValue');
     if (totalQtyEl) totalQtyEl.innerText = '0 ชิ้น';
@@ -915,6 +915,12 @@ function renderHistoryTable(data) {
         <td style="color: #e53e3e; font-weight: bold; text-align: center;">-${qty}</td>
         <td>฿${price.toLocaleString()}</td>
         <td>฿${(price * qty).toLocaleString()}</td>
+        <td>
+          <div style="display: flex; gap: 4px; justify-content: center;">
+            <button class="btn-action btn-edit" onclick="openEditHistoryModal('${item.id}')">✏️</button>
+            <button class="btn-action btn-delete" onclick="deleteHistoryItem('${item.id}')">🗑️</button>
+          </div>
+        </td>
       </tr>
     `;
   });
@@ -923,4 +929,76 @@ function renderHistoryTable(data) {
   const totalValEl = document.getElementById('totalCutValue');
   if (totalQtyEl) totalQtyEl.innerText = `${totalQty} ชิ้น`;
   if (totalValEl) totalValEl.innerText = `฿${totalPrice.toLocaleString()}`;
+}
+
+// ------------------------------------------
+// ฟังก์ชัน เปิด/ปิด และ บันทึกการแก้ไข ประวัติ
+// ------------------------------------------
+function openEditHistoryModal(id) {
+  const item = historyCache.find(h => String(h.id) === String(id));
+  if (!item) return;
+
+  document.getElementById('editHistoryId').value = item.id;
+  document.getElementById('editHistoryBrand').value = item.brand || '';
+  document.getElementById('editHistoryName').value = item.name || '';
+  document.getElementById('editHistoryLotNo').value = item.lot_no || '';
+  document.getElementById('editHistoryQtyCut').value = item.qty_cut || 1;
+  document.getElementById('editHistorySellingPrice').value = item.selling_price || 0;
+
+  const modal = document.getElementById('editHistoryModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeEditHistoryModal() {
+  const modal = document.getElementById('editHistoryModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function handleUpdateHistory(event) {
+  event.preventDefault();
+  const id = document.getElementById('editHistoryId').value;
+
+  const updateData = {
+    brand: document.getElementById('editHistoryBrand').value,
+    name: document.getElementById('editHistoryName').value,
+    lotNo: document.getElementById('editHistoryLotNo').value,
+    qtyCut: Number(document.getElementById('editHistoryQtyCut').value),
+    sellingPrice: Number(document.getElementById('editHistorySellingPrice').value)
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/history/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData)
+    });
+
+    const result = await res.json();
+    if (result.status === 'success') {
+      closeEditHistoryModal();
+      fetchFilteredHistory();
+    }
+  } catch (err) {
+    alert('ไม่สามารถแก้ไขรายการประวัติได้');
+  }
+}
+
+// ------------------------------------------
+// ฟังก์ชัน ลบรายการประวัติ
+// ------------------------------------------
+async function deleteHistoryItem(id) {
+  if (!confirm('คุณต้องการลบรายการประวัตินี้ใช่หรือไม่?')) return;
+
+  try {
+    const res = await fetch(`${API_URL}/history/${id}`, {
+      method: 'DELETE'
+    });
+
+    const result = await res.json();
+    if (result.status === 'success') {
+      fetchFilteredHistory();
+    }
+  } catch (err) {
+    alert('เกิดข้อผิดพลาดในการลบรายการประวัติ');
+  }
 }
