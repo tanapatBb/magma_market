@@ -1004,13 +1004,15 @@ async function deleteHistoryItem(id) {
 }
 
 // ==========================================
-// ฟังก์ชัน เครื่องคิดเลขคำนวณกำไรสุทธิ (Shopee Calculator)
+// เครื่องคิดเลขตารางกำไรสุทธิ (15% - 50% พร้อม Pagination หน้าละ 5 Row)
 // ==========================================
-function calculateShopeeProfit() {
+let currentCalcPage = 1;
+const rowsPerPage = 5;
+let generatedCalcData = [];
+
+function calculateShopeeTable(page = 1) {
   const costPrice = parseFloat(document.getElementById('calcCostPrice').value) || 0;
   const sellingPrice = parseFloat(document.getElementById('calcSellingPrice').value) || 0;
-  const discountVal = parseFloat(document.getElementById('calcDiscountValue').value) || 0;
-  const discountType = document.getElementById('calcDiscountType').value;
   const feePercent = parseFloat(document.getElementById('calcFeePercent').value) || 0;
 
   if (sellingPrice <= 0) {
@@ -1018,52 +1020,76 @@ function calculateShopeeProfit() {
     return;
   }
 
-  // 1. คำนวณส่วนลด
-  let discountAmount = 0;
-  let discountText = 'ไม่มีส่วนลด';
+  // สร้างข้อมูลตารางตั้งแต่ส่วนลด 15% ถึง 50% (ทีละ 1%) รวม 36 รายการ
+  generatedCalcData = [];
+  for (let discountPct = 15; discountPct <= 50; discountPct++) {
+    const discountAmount = sellingPrice * (discountPct / 100);
+    const priceAfterDiscount = Math.max(0, sellingPrice - discountAmount);
+    const feeAmount = priceAfterDiscount * (feePercent / 100);
+    const netProfit = priceAfterDiscount - feeAmount - costPrice;
 
-  if (discountType === 'percent') {
-    discountAmount = sellingPrice * (discountVal / 100);
-    discountText = `${discountVal}% (${discountAmount.toFixed(2)} บาท)`;
-  } else {
-    discountAmount = discountVal;
-    const discountPct = sellingPrice > 0 ? (discountAmount / sellingPrice) * 100 : 0;
-    discountText = `${discountAmount.toFixed(2)} บาท (${discountPct.toFixed(1)}%)`;
+    generatedCalcData.push({
+      discountPct,
+      priceAfterDiscount,
+      feeAmount,
+      costPrice,
+      netProfit
+    });
   }
 
-  // 2. ราคาขายหลังหักส่วนลด
-  const priceAfterDiscount = Math.max(0, sellingPrice - discountAmount);
+  currentCalcPage = page;
+  renderCalcTablePage();
+  document.getElementById('calcTableContainer').style.display = 'block';
+}
 
-  // 3. หักค่าธรรมเนียม Shopee
-  const feeAmount = priceAfterDiscount * (feePercent / 100);
+function renderCalcTablePage() {
+  const tbody = document.getElementById('calcTableBody');
+  if (!tbody) return;
 
-  // 4. กำไรสุทธิต่อชิ้น = ราคาหลังหักส่วนลด - ค่าธรรมเนียม - ต้นทุน
-  const netProfit = priceAfterDiscount - feeAmount - costPrice;
+  tbody.innerHTML = '';
 
-  // แสดงผลลัพธ์ลงใน HTML
-  document.getElementById('resDiscountText').innerText = discountText;
-  document.getElementById('resPriceAfterDiscount').innerText = `฿${priceAfterDiscount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  document.getElementById('resFeeAmount').innerText = `฿${feeAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${feePercent}%)`;
-  document.getElementById('resCostAmount').innerText = `฿${costPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const totalPages = Math.ceil(generatedCalcData.length / rowsPerPage);
+  if (currentCalcPage < 1) currentCalcPage = 1;
+  if (currentCalcPage > totalPages) currentCalcPage = totalPages;
 
-  const profitEl = document.getElementById('resNetProfit');
-  profitEl.innerText = `฿${netProfit.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  
-  // เปลี่ยนสีถ้าขาดทุน
-  if (netProfit < 0) {
-    profitEl.style.color = '#e74c3c'; // สีแดง
-  } else {
-    profitEl.style.color = '#2ecc71'; // สีเขียว
-  }
+  const startIndex = (currentCalcPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const pageData = generatedCalcData.slice(startIndex, endIndex);
 
-  document.getElementById('calcResultBox').style.display = 'block';
+  pageData.forEach(item => {
+    const profitColor = item.netProfit >= 0 ? '#2ecc71' : '#e74c3c';
+    tbody.innerHTML += `
+      <tr>
+        <td style="text-align: center;"><b>${item.discountPct}%</b></td>
+        <td style="text-align: right;">฿${item.priceAfterDiscount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="text-align: right; color: #e74c3c;">-฿${item.feeAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="text-align: right; color: #e74c3c;">-฿${item.costPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="text-align: right; font-weight: bold; color: ${profitColor};">฿${item.netProfit.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      </tr>
+    `;
+  });
+
+  // อัปเดตตัวเลขหน้าและสถานะปุ่ม
+  const pageInfo = document.getElementById('calcPageInfo');
+  if (pageInfo) pageInfo.innerText = `หน้า ${currentCalcPage} จาก ${totalPages} (ส่วนลด ${pageData[0].discountPct}% - ${pageData[pageData.length - 1].discountPct}%)`;
+
+  const btnPrev = document.getElementById('btnPrevCalcPage');
+  const btnNext = document.getElementById('btnNextCalcPage');
+
+  if (btnPrev) btnPrev.disabled = currentCalcPage === 1;
+  if (btnNext) btnNext.disabled = currentCalcPage === totalPages;
+}
+
+function changeCalcPage(direction) {
+  currentCalcPage += direction;
+  renderCalcTablePage();
 }
 
 function resetShopeeCalculator() {
   document.getElementById('calcCostPrice').value = '';
   document.getElementById('calcSellingPrice').value = '';
-  document.getElementById('calcDiscountValue').value = '';
-  document.getElementById('calcDiscountType').value = 'percent';
   document.getElementById('calcFeePercent').value = '20.6';
-  document.getElementById('calcResultBox').style.display = 'none';
+  document.getElementById('calcTableContainer').style.display = 'none';
+  generatedCalcData = [];
+  currentCalcPage = 1;
 }

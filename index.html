@@ -40,10 +40,10 @@
       </div>
 
 <!-- ========================================== -->
-<!-- เครื่องคิดเลขคำนวณกำไรสุทธิ (Shopee Calculator) -->
+<!-- เครื่องคิดเลขคำนวณกำไรสุทธิ ( Shopee Table + Pagination ) -->
 <!-- ========================================== -->
 <div class="card" style="margin-top: 20px;">
-  <h2>🧮 เครื่องคิดเลขคำนวณกำไรสุทธิ (Shopee & Online)</h2>
+  <h2>🧮 ตารางวิเคราะห์กำไรสุทธิ (ส่วนลด 15% - 50%)</h2>
   
   <div class="form-grid">
     <div class="form-group">
@@ -57,40 +57,40 @@
     </div>
 
     <div class="form-group">
-      <label>ส่วนลดให้ลูกค้า</label>
-      <div class="flex-row">
-        <input type="number" id="calcDiscountValue" placeholder="ตัวเลขส่วนลด" step="0.01" style="flex: 2;">
-        <select id="calcDiscountType" style="flex: 1;">
-          <option value="percent">% (เปอร์เซ็นต์)</option>
-          <option value="amount">บาท</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-group">
       <label>อัตราค่าธรรมเนียม Shopee (%)</label>
       <input type="number" id="calcFeePercent" value="20.6" step="0.1" placeholder="20.6">
     </div>
   </div>
 
   <div style="margin-top: 15px; display: flex; gap: 10px;">
-    <button class="btn btn-primary" onclick="calculateShopeeProfit()" style="flex: 1;">🧮 คำนวณกำไร</button>
+    <button class="btn btn-primary" onclick="calculateShopeeTable(1)" style="flex: 1;">🧮 คำนวณตารางกำไร</button>
     <button class="btn btn-secondary" onclick="resetShopeeCalculator()">🔄 ล้างข้อมูล</button>
   </div>
 
-  <!-- ผลลัพธ์การคำนวณ -->
-  <div id="calcResultBox" style="display: none; margin-top: 20px; padding: 15px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--border-color, #333);">
-    <h3 style="margin-bottom: 10px; font-size: 1.1rem; color: #3498db;">📊 ผลการคำนวณสรุปต่อชิ้น</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.95rem;">
-      <p>🏷️ <b>อัตราส่วนลด:</b> <span id="resDiscountText">-</span></p>
-      <p>💵 <b>ราคาขายหลังหักส่วนลด:</b> <b id="resPriceAfterDiscount" style="color: #f39c12;">0 ฿</b></p>
-      <p>💸 <b>หักค่าธรรมเนียม Shopee:</b> <span id="resFeeAmount" style="color: #e74c3c;">0 ฿</span></p>
-      <p>📦 <b>หักต้นทุนสินค้า:</b> <span id="resCostAmount" style="color: #e74c3c;">0 ฿</span></p>
+  <!-- ตารางผลลัพธ์ -->
+  <div id="calcTableContainer" style="display: none; margin-top: 20px;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="text-align: center;">ส่วนลด (%)</th>
+            <th style="text-align: right;">ราคาขายหลังหักส่วนลด</th>
+            <th style="text-align: right;">หักค่าธรรมเนียม Shopee</th>
+            <th style="text-align: right;">หักทุนสินค้า</th>
+            <th style="text-align: right;">กำไรสุทธิต่อชิ้น</th>
+          </tr>
+        </thead>
+        <tbody id="calcTableBody"></tbody>
+      </table>
     </div>
-    <hr style="margin: 12px 0; border: 0; border-top: 1px dashed #555;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 1.1rem; font-weight: bold;">✨ กำไรสุทธิต่อชิ้น:</span>
-      <span id="resNetProfit" style="font-size: 1.5rem; font-weight: 800; color: #2ecc71;">0 ฿</span>
+
+    <!-- ส่วนเปลี่ยนหน้าย่อย (Pagination) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 6px;">
+      <span id="calcPageInfo" style="font-size: 0.9rem; font-weight: bold;">หน้า 1 จาก 8</span>
+      <div style="display: flex; gap: 5px;">
+        <button id="btnPrevCalcPage" class="btn btn-secondary btn-xs" onclick="changeCalcPage(-1)">◀️ ก่อนหน้า</button>
+        <button id="btnNextCalcPage" class="btn btn-secondary btn-xs" onclick="changeCalcPage(1)">ถัดไป ▶️</button>
+      </div>
     </div>
   </div>
 </div>
