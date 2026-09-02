@@ -39,6 +39,62 @@
         <button class="btn btn-secondary" onclick="toggleScanner()">📷 สแกนบาร์โค้ด</button>
       </div>
 
+<!-- ========================================== -->
+<!-- เครื่องคิดเลขคำนวณกำไรสุทธิ (Shopee Calculator) -->
+<!-- ========================================== -->
+<div class="card" style="margin-top: 20px;">
+  <h2>🧮 เครื่องคิดเลขคำนวณกำไรสุทธิ (Shopee & Online)</h2>
+  
+  <div class="form-grid">
+    <div class="form-group">
+      <label>ราคาทุนสินค้า (บาท)</label>
+      <input type="number" id="calcCostPrice" placeholder="เช่น 100" step="0.01">
+    </div>
+
+    <div class="form-group">
+      <label>ราคาตั้งขายปกติ (บาท)</label>
+      <input type="number" id="calcSellingPrice" placeholder="เช่น 250" step="0.01">
+    </div>
+
+    <div class="form-group">
+      <label>ส่วนลดให้ลูกค้า</label>
+      <div class="flex-row">
+        <input type="number" id="calcDiscountValue" placeholder="ตัวเลขส่วนลด" step="0.01" style="flex: 2;">
+        <select id="calcDiscountType" style="flex: 1;">
+          <option value="percent">% (เปอร์เซ็นต์)</option>
+          <option value="amount">บาท</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>อัตราค่าธรรมเนียม Shopee (%)</label>
+      <input type="number" id="calcFeePercent" value="20.6" step="0.1" placeholder="20.6">
+    </div>
+  </div>
+
+  <div style="margin-top: 15px; display: flex; gap: 10px;">
+    <button class="btn btn-primary" onclick="calculateShopeeProfit()" style="flex: 1;">🧮 คำนวณกำไร</button>
+    <button class="btn btn-secondary" onclick="resetShopeeCalculator()">🔄 ล้างข้อมูล</button>
+  </div>
+
+  <!-- ผลลัพธ์การคำนวณ -->
+  <div id="calcResultBox" style="display: none; margin-top: 20px; padding: 15px; background: rgba(0, 0, 0, 0.2); border-radius: 8px; border: 1px solid var(--border-color, #333);">
+    <h3 style="margin-bottom: 10px; font-size: 1.1rem; color: #3498db;">📊 ผลการคำนวณสรุปต่อชิ้น</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.95rem;">
+      <p>🏷️ <b>อัตราส่วนลด:</b> <span id="resDiscountText">-</span></p>
+      <p>💵 <b>ราคาขายหลังหักส่วนลด:</b> <b id="resPriceAfterDiscount" style="color: #f39c12;">0 ฿</b></p>
+      <p>💸 <b>หักค่าธรรมเนียม Shopee:</b> <span id="resFeeAmount" style="color: #e74c3c;">0 ฿</span></p>
+      <p>📦 <b>หักต้นทุนสินค้า:</b> <span id="resCostAmount" style="color: #e74c3c;">0 ฿</span></p>
+    </div>
+    <hr style="margin: 12px 0; border: 0; border-top: 1px dashed #555;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 1.1rem; font-weight: bold;">✨ กำไรสุทธิต่อชิ้น:</span>
+      <span id="resNetProfit" style="font-size: 1.5rem; font-weight: 800; color: #2ecc71;">0 ฿</span>
+    </div>
+  </div>
+</div>
+
       <!-- Scanner Container -->
       <div id="reader-container" style="display: none; margin-bottom: 15px;">
         <div id="reader"></div>

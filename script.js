@@ -1002,3 +1002,68 @@ async function deleteHistoryItem(id) {
     alert('เกิดข้อผิดพลาดในการลบรายการประวัติ');
   }
 }
+
+// ==========================================
+// ฟังก์ชัน เครื่องคิดเลขคำนวณกำไรสุทธิ (Shopee Calculator)
+// ==========================================
+function calculateShopeeProfit() {
+  const costPrice = parseFloat(document.getElementById('calcCostPrice').value) || 0;
+  const sellingPrice = parseFloat(document.getElementById('calcSellingPrice').value) || 0;
+  const discountVal = parseFloat(document.getElementById('calcDiscountValue').value) || 0;
+  const discountType = document.getElementById('calcDiscountType').value;
+  const feePercent = parseFloat(document.getElementById('calcFeePercent').value) || 0;
+
+  if (sellingPrice <= 0) {
+    alert('กรุณากรอกราคาตั้งขายปกติ');
+    return;
+  }
+
+  // 1. คำนวณส่วนลด
+  let discountAmount = 0;
+  let discountText = 'ไม่มีส่วนลด';
+
+  if (discountType === 'percent') {
+    discountAmount = sellingPrice * (discountVal / 100);
+    discountText = `${discountVal}% (${discountAmount.toFixed(2)} บาท)`;
+  } else {
+    discountAmount = discountVal;
+    const discountPct = sellingPrice > 0 ? (discountAmount / sellingPrice) * 100 : 0;
+    discountText = `${discountAmount.toFixed(2)} บาท (${discountPct.toFixed(1)}%)`;
+  }
+
+  // 2. ราคาขายหลังหักส่วนลด
+  const priceAfterDiscount = Math.max(0, sellingPrice - discountAmount);
+
+  // 3. หักค่าธรรมเนียม Shopee
+  const feeAmount = priceAfterDiscount * (feePercent / 100);
+
+  // 4. กำไรสุทธิต่อชิ้น = ราคาหลังหักส่วนลด - ค่าธรรมเนียม - ต้นทุน
+  const netProfit = priceAfterDiscount - feeAmount - costPrice;
+
+  // แสดงผลลัพธ์ลงใน HTML
+  document.getElementById('resDiscountText').innerText = discountText;
+  document.getElementById('resPriceAfterDiscount').innerText = `฿${priceAfterDiscount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  document.getElementById('resFeeAmount').innerText = `฿${feeAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${feePercent}%)`;
+  document.getElementById('resCostAmount').innerText = `฿${costPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const profitEl = document.getElementById('resNetProfit');
+  profitEl.innerText = `฿${netProfit.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  
+  // เปลี่ยนสีถ้าขาดทุน
+  if (netProfit < 0) {
+    profitEl.style.color = '#e74c3c'; // สีแดง
+  } else {
+    profitEl.style.color = '#2ecc71'; // สีเขียว
+  }
+
+  document.getElementById('calcResultBox').style.display = 'block';
+}
+
+function resetShopeeCalculator() {
+  document.getElementById('calcCostPrice').value = '';
+  document.getElementById('calcSellingPrice').value = '';
+  document.getElementById('calcDiscountValue').value = '';
+  document.getElementById('calcDiscountType').value = 'percent';
+  document.getElementById('calcFeePercent').value = '20.6';
+  document.getElementById('calcResultBox').style.display = 'none';
+}
